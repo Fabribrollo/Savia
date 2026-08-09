@@ -1,0 +1,28 @@
+---
+interface Props {
+  titulo: string;
+  texto: string;
+  /** Clases de posicionamiento (top/left/right). */
+  class?: string;
+}
+
+const { titulo, texto, class: clase = '' } = Astro.props;
+---
+
+<article
+  data-card
+  class:list={[
+    'absolute w-[32%] min-w-[245px] max-w-[400px] rounded-3xl bg-crema px-7 py-6 text-center shadow-[0_14px_34px_-14px_rgba(50,60,10,0.55)]',
+    clase,
+  ]}
+>
+  <div class="mb-3 flex items-center justify-center gap-3.5">
+    <span class="grid size-12 shrink-0 place-items-center rounded-full bg-azul text-crema">
+      <slot name="icono" />
+    </span>
+    <h3 class="font-duper text-[1.35rem] font-bold leading-tight text-azul md:text-[1.75rem]">
+      {titulo}
+    </h3>
+  </div>
+  <p class="font-futura text-[1rem] font-medium leading-snug text-balance text-azul/80">{texto}</p>
+</article>

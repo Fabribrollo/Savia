@@ -1,0 +1,78 @@
+
+---
+const jugos = [
+  {
+      nombre: 'Naranja & Jengibre',
+      color: '850E10',
+      imagen: '/images/naranja-trim.png',
+      fondo: '/images/naranjafondo.png',
+    },
+    {
+      nombre: 'Frutos Rojos',
+      color: 'CED500',
+      imagen: '/images/rojo-trim.png',
+      fondo: '/images/rojofondo.png',
+    },
+  {
+    nombre: 'Lima & Menta',
+    color: '0071B8',
+    imagen: '/images/amarillo-trim.png',
+    fondo: '/images/amarillofondo.png',
+  },
+];
+
+---
+
+<section
+  id="productos"
+  data-hero
+  class="relative isolate flex min-h-dvh flex-col overflow-hidden bg-lima"
+>
+  <div class="flex justify-center items-center w-full h-full flex-col m-8">
+    <h2 class="text-center text-6xl font-bold text-[#850E10] font-duper">
+      Tu momento. Tu sabor
+    </h2>
+    <h5 class="text-center text-lg font-futura text-md text-[#520000] font-medium">
+      Tres sabores. Tres formas de disfrutar la frescura.
+    </h5>
+
+<div class="flex flex-col md:flex-row justify-center items-center gap-8 mt-8 w-full">
+  {jugos.map((jugo) => (
+  <div
+    class="group card-jugo relative flex flex-col justify-center items-center gap-4 rounded-4xl p-4 min-w-[25%] overflow-hidden border border-white/35 bg-white/14 shadow-[inset_0_0_22px_rgba(0,0,0,0.13)] backdrop-blur-md backdrop-saturate-[1.2]"
+    style={`color: #${jugo.color};`}
+  >
+    <h2 class="text-4xl font-bold text-center pt-10 pt-6 font-duper z-10">{jugo.nombre}</h2>
+    <!-- Fondo que aparece en hover -->
+    <div
+      class="absolute inset-0 bg-cover bg-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      style={`background-image: url(${jugo.fondo});`}
+    ></div>
+
+    <!-- Reflejo apenas insinuado sobre el borde inferior. Va después del fondo
+         de hover para quedar por encima de él. -->
+    <span
+      aria-hidden="true"
+      class="pointer-events-none absolute bottom-[12%] left-[-18%] h-[30%] w-[136%] rounded-[50%] blur-[14px]"
+      style="background: radial-gradient(ellipse at 50% 55%, rgba(255,255,255,0.21) 0%, rgba(255,255,255,0.11) 42%, rgba(255,255,255,0.03) 68%, transparent 82%);"
+    ></span>
+
+    <!-- Filo del reflejo: un arco fino sobre el borde de arriba de la elipse,
+         que es lo que hace que se lea como vidrio y no como una mancha. -->
+    <span
+      aria-hidden="true"
+      class="pointer-events-none absolute bottom-[24%] left-[-10%] h-[22%] w-[120%] rounded-[50%] border-t border-white/22 blur-[3px]"
+    ></span>
+
+    <!-- Contenido -->
+    <img
+      alt={jugo.nombre}
+      src={jugo.imagen}
+      class="relative z-10 w-48 h-auto origin-top object-contain transition-transform duration-500 ease-out group-hover:scale-[1.45]"
+    />
+  </div>
+))}
+</div>
+
+  </div>
+</section>

@@ -1,0 +1,30 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'a'> {}
+
+// El resto de los atributos (data-*, target, rel…) se reenvían al <a>.
+// Sin este spread, Astro los descarta silenciosamente.
+const { href = '#', class: clase = '', ...resto } = Astro.props;
+---
+
+<a
+  href={href}
+  class:list={[
+    // El hover va por filter y no por transform: GSAP escribe el transform en
+    // cada frame y una transition sobre esa misma propiedad se pelea con él.
+    'inline-flex items-center gap-5 rounded-full bg-vino px-16 py-6 font-duper text-3xl font-bold text-crema transition-[filter] duration-200 hover:brightness-125 md:text-[2.1rem]',
+    clase,
+  ]}
+  {...resto}
+>
+  <slot />
+  <svg width="27" height="27" viewBox="0 0 18 18" fill="none" aria-hidden="true" class="shrink-0">
+    <path
+      d="M4.5 13.5 13.5 4.5M6 4.5h7.5V12"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      stroke-linejoin="round"></path>
+  </svg>
+</a>

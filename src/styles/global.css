@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  /* Tipografías del kit de Typekit (fam5ams) */
+  --font-duper: "duper", system-ui, sans-serif;
+  --font-futura: "futura-pt", system-ui, sans-serif;
+
+  /* Paleta Savia */
+  --color-azul: #0071b8;
+  --color-vino: #6b0000;
+  --color-crema: #ffedc2;
+  --color-aura: #ced500;
+  --color-aura-suave: #e6ea7f;
+  --color-lima: #e4ec7a;
+  --color-marco: #141414;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Sin capa, así que gana sobre las utilidades de Tailwind (que van en @layer).
+   Es el color que se ve al hacer overscroll, más allá del alto del documento. */
+body {
+  background: var(--color-lima);
+}
+
+/* Los estados iniciales de la animación los fija JS, y ese JS corre después
+   del primer render: sin esto se ve un fotograma con el titular, la botella,
+   las tarjetas y los beneficios apilados en su posición final.
+   El hero queda oculto hasta que el script marca el <html>; el fondo lima del
+   body cubre ese instante, así que no se ve ningún salto. */
+[data-hero] {
+  visibility: hidden;
+}
+
+html[data-listo] [data-hero] {
+  visibility: visible;
+}
+
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  background-image: var(--fondo);
+  background-size: cover;
+  background-position: center;
+}

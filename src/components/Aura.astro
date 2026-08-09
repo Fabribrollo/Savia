@@ -1,0 +1,75 @@
+---
+interface Props {
+  /** Diámetro del aura. Cualquier unidad CSS. */
+  size?: string;
+  /** Corrimiento vertical respecto del centro del contenedor. Positivo = hacia abajo. */
+  offsetY?: string;
+  /** Intensidad del halo, 0 a 1. */
+  intensidad?: number;
+  /** Color del halo. Por defecto el token --color-aura. */
+  color?: string;
+  /** Radio (en %) hasta donde el color se mantiene pleno antes de empezar a caer. */
+  nucleo?: string;
+  /** Radio (en %) donde el degradado termina de apagarse. */
+  fin?: string;
+  /** Marca en el DOM, para poder engancharle animaciones distintas. */
+  marca?: string;
+  class?: string;
+}
+
+const {
+  size = 'min(62vw, 860px)',
+  offsetY = '0%',
+  intensidad = 0.55,
+  color = 'var(--color-aura)',
+  nucleo = '25%',
+  fin = '88%',
+  marca = 'aura',
+  class: clase = '',
+} = Astro.props;
+---
+
+{/*
+  Se centra con `inset` + `margin: auto`, no con transform ni translate.
+  Es a propósito: GSAP pisa ambas propiedades al animar un elemento, así que
+  este centrado sobrevive a cualquier animación que le enganches después.
+*/}
+<span
+  aria-hidden="true"
+  data-aura={marca}
+  class:list={['pointer-events-none absolute', clase]}
+  style={`--aura-size: ${size}; --aura-offset: ${offsetY}; --aura-alpha: ${intensidad}; --aura-color: ${color}; --aura-nucleo: ${nucleo}; --aura-fin: ${fin};`}
+>
+</span>
+
+<style>
+  [data-aura] {
+    inset: var(--aura-offset) 0 0 0;
+    margin: auto;
+    width: var(--aura-size);
+    height: var(--aura-size);
+    border-radius: 9999px;
+    opacity: var(--aura-alpha);
+    /* `closest-side` es imprescindible: sin él los % se miden contra
+       farthest-corner (la media diagonal, un 41% más que el radio), y como el
+       elemento está recortado en círculo el degradado quedaba cortado al 71%
+       de su recorrido, todavía con color. Con closest-side el 100% coincide
+       con el borde visible y la caída se completa.
+       `circle` fuerza el halo redondo aunque la caja no lo sea.
+       Las paradas intermedias se interpolan entre --aura-nucleo y --aura-fin,
+       así cada instancia controla cuán extendido es su degradado sin tener
+       que reescribir la lista de stops. */
+    background: radial-gradient(
+      circle closest-side,
+      var(--aura-color) 0%,
+      var(--aura-color) var(--aura-nucleo),
+      color-mix(in srgb, var(--aura-color) 86%, transparent)
+        calc(var(--aura-nucleo) + (var(--aura-fin) - var(--aura-nucleo)) * 0.24),
+      color-mix(in srgb, var(--aura-color) 58%, transparent)
+        calc(var(--aura-nucleo) + (var(--aura-fin) - var(--aura-nucleo)) * 0.44),
+      color-mix(in srgb, var(--aura-color) 30%, transparent)
+        calc(var(--aura-nucleo) + (var(--aura-fin) - var(--aura-nucleo)) * 0.65),
+      transparent var(--aura-fin)
+    );
+  }
+</style>

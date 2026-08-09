@@ -1,0 +1,36 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = 'Savia', description = 'Savia' } = Astro.props;
+
+const fontUrl = "https://use.typekit.net/fam5ams.css"
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href={fontUrl} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <script is:inline>
+      // Red de seguridad. El hero arranca con visibility:hidden y lo destapa
+      // el script de la animación; si ese módulo falla o no carga, la página
+      // quedaría en blanco. A los 2s se muestra igual.
+      setTimeout(function () {
+        document.documentElement.setAttribute('data-listo', '');
+      }, 2000);
+    </script>
+  </head>
+  <body class="min-h-dvh bg-lima">
+    <slot />
+  </body>
+</html>
+

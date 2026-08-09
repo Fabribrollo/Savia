@@ -1,0 +1,628 @@
+---
+import Nav from '../Nav.astro';
+import Aura from '../Aura.astro';
+import Boton from '../Boton.astro';
+import Card from '../Card.astro';
+
+// Los SVG de /icons ya vienen con stroke #FFEDC2 (el crema), que es el color
+// que corresponde sobre el círculo azul, así que se usan tal cual como <img>.
+const beneficios = [
+  {
+    titulo: 'Natural por dentro',
+    texto: 'Hecha con ingredientes seleccionados para conservar lo mejor de la naturaleza.',
+    pos: 'left-[13%] top-[29%]',
+    icono: '/icons/natural.svg',
+  },
+  {
+    titulo: 'Sabores auténticos',
+    texto: 'Recetas equilibradas donde cada ingrediente tiene un propósito.',
+    pos: 'left-[16%] top-[56%]',
+    icono: '/icons/cereza.svg',
+  },
+  {
+    titulo: 'Fresca en cada sorbo',
+    texto: 'Una experiencia liviana que revitaliza desde el primer trago.',
+    pos: 'right-[13%] top-[21%]',
+    icono: '/icons/burbujas.svg',
+  },
+  {
+    titulo: 'Siempre con vos',
+    texto: 'Desde la mañana hasta el último plan del día, Savia acompaña tu movimiento.',
+    pos: 'right-[16%] top-[48%]',
+    icono: '/icons/energia.svg',
+  },
+];
+
+// Tercera sección: los 5 títulos se acomodan sobre el arco del domo, en el
+// orden en que quedan de izquierda a derecha. El ángulo (en grados, 0 = cima
+// del domo) lo asigna el script a partir de la posición en el array.
+const arcoBeneficios = [
+  { titulo: 'Ingredientes naturales', icono: '/icons/natural.svg' },
+  { titulo: 'Bienestar diario', icono: '/icons/bienestar.svg' },
+  { titulo: 'Frescura real', icono: '/icons/burbujas.svg' },
+  { titulo: 'Sabores auténticos', icono: '/icons/cereza.svg' },
+  { titulo: 'Energía para tu día', icono: '/icons/energia.svg' },
+];
+---
+
+<section
+  id="home"
+  data-hero
+  class="relative isolate flex min-h-dvh flex-col overflow-hidden bg-lima"
+>
+  <Nav />
+
+  <h1
+    class="relative z-10 px-4 pt-32 text-center font-duper font-bold uppercase leading-[0.82] tracking-[-0.015em] text-azul md:pt-36"
+    style="font-size: clamp(2.75rem, 12.4vw, 11.5rem);"
+  >
+    {/* Cada renglón va dentro de una máscara con overflow-hidden: el texto
+        entra deslizándose desde abajo y aparece recortado por su propia línea.
+        El py/-my compensa el recorte de los glifos con leading 0.82. */}
+    <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
+      <span class="block" data-linea>Lo natural en</span>
+    </span>
+    <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
+      <span class="block" data-linea>Movimiento</span>
+    </span>
+  </h1>
+
+  <!-- Aura en capa propia (z-0): va por detrás del titular, la botella por
+       delante (z-20). Anclada al centro inferior y corrida hacia abajo, así
+       nace del borde de abajo y solo sobresale la parte de arriba del halo. -->
+  <div class="pointer-events-none absolute inset-x-0 bottom-0 z-0 flex justify-center">
+    {/* translate-y 50% = la mitad del alto de la caja: deja el centro del
+        círculo justo sobre el borde inferior, así solo se ve su mitad de
+        arriba y el resto queda cortado. */}
+    {/* Tres círculos concéntricos. Todos van dimensionados en vw (no en %)
+        para que salgan círculos perfectos sin depender de la caja del padre.
+        `nucleo` es el radio hasta donde el color se mantiene pleno; de ahí
+        hasta `fin` va el degradado. */}
+    {/*
+      Medidas tomadas de la referencia. Sobre esa imagen el centro cae en
+      (300, 327) y el arco blanco tiene radio 292, o sea 585 de diámetro.
+      Con ese radio como unidad salen las demás:
+        · CED500  -> color pleno hasta r=210, transparente en r=255  (0.872 del blanco)
+        · E6EA7F  -> color pleno hasta r=150, transparente en r=215  (0.735 del blanco)
+      El disco E6EA7F va encima del CED500: al tapar el centro es lo que
+      convierte el disco en anillo, con los dos bordes difuminados.
+      Todo en vw para que salgan círculos sin depender de la caja del padre.
+    */}
+    {/* El corrimiento del 50% lo aplica GSAP (yPercent) y no Tailwind: en la
+        tercera sección hay que bajar más el centro del domo, y GSAP no puede
+        animar la propiedad `translate` que genera la utilidad. */}
+    <div data-halo class="relative aspect-square w-[49vw] max-w-[720px]">
+      {/* 2º: CED500. Pleno hasta el 82% del radio (210/255). */}
+      <Aura
+        size="min(43vw, 628px)"
+        offsetY="0%"
+        intensidad={1}
+        nucleo="95%"
+        fin="100%"
+      />
+
+      {/* 1º: color del fondo, encima. Pleno hasta el 70% del radio (150/215). */}
+      <Aura
+        marca="interna"
+        size="min(36vw, 529px)"
+        offsetY="0%"
+        intensidad={1}
+        nucleo="70%"
+        fin="100%"
+        color="var(--color-aura-suave)"
+      />
+
+      {/* 3º y último: solo una línea blanca muy delgada, por fuera de ambos
+          círculos. Se centra con inset+margin y no con translate, para que
+          GSAP no lo pise al escalarlo. */}
+      <span
+        aria-hidden="true"
+        data-contorno
+        class="pointer-events-none absolute inset-0 m-auto h-full w-full rounded-full border border-white/50"
+      ></span>
+    </div>
+  </div>
+
+  <!-- La botella arranca al 45% del alto y se corta contra el borde inferior,
+       como en la referencia. -->
+  <div class="pointer-events-none absolute inset-x-0 top-[45%] z-20 flex justify-center">
+    <div data-escenario class="relative flex w-full justify-center">
+      <!-- Este wrapper es el que anima GSAP. La rotación base va en la <img>
+           para que el tilt 3D no la pise. -->
+      <div data-botella class="relative will-change-transform">
+        <!-- rojo-trim.png: el original tiene ~69% de ancho en transparencia,
+             lo que hacía imposible dimensionarla con vw. -->
+        <img
+          src="/images/rojo-trim.png"
+          alt="Botella de jugo Savia sabor rojo"
+          width="854"
+          height="2287"
+          data-botella-img
+          class="w-[22vw] max-w-[380px] min-w-[165px] object-contain drop-shadow-[0_30px_50px_rgba(90,100,20,0.3)]"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Aura chica: aparece recién al final del scroll, detrás de la botella
+       ya centrada. Va en z-[5]: encima de la estela grande, debajo de la
+       botella (z-20). -->
+  {/* z-[8]: por encima del domo de la tercera etapa (z-[6]) y por debajo de
+      la botella (z-20). Con z-[5] el domo la tapaba y desaparecía. */}
+  <div class="pointer-events-none absolute inset-0 z-[8] flex items-center justify-center">
+    {/* Ya centrada, la botella mide ~283px de ancho. A 25vw la estela apenas
+        asomaba 38px por lado y no se leía; 38vw deja ~130px visibles.
+        El núcleo alto mantiene color pleno hasta pasado el borde de la
+        botella, en vez de empezar a apagarse detrás de ella. */}
+    <div class="relative aspect-square w-[38vw] max-w-[550px]">
+      <Aura
+        marca="suave"
+        size="100%"
+        offsetY="0%"
+        intensidad={1}
+        nucleo="28%"
+        fin="100%"
+        color="var(--color-aura-suave)"
+      />
+    </div>
+  </div>
+
+  <!-- Tarjetas del estado final -->
+  <div data-cards class="pointer-events-none absolute inset-0 z-30">
+    {
+      beneficios.map(({ titulo, texto, pos, icono }) => (
+        <Card titulo={titulo} texto={texto} class={pos}>
+          <img slot="icono" src={icono} alt="" aria-hidden="true" class="size-6 object-contain" />
+        </Card>
+      ))
+    }
+  </div>
+
+  <!-- Tercera sección: los 5 beneficios apoyados sobre el arco del domo.
+       Van en z-[9]: por encima del aura (z-0) y del aura suave (z-[8]), por
+       debajo de la botella (z-20). La posición la calcula el script con
+       trigonometría sobre el círculo del domo, así que acá no llevan
+       coordenadas: solo left/top en 0 y GSAP los mueve con x/y. -->
+  <div data-arco class="pointer-events-none absolute inset-0 z-[9]">
+    {
+      arcoBeneficios.map(({ titulo, icono }) => (
+        <div
+          data-arco-item
+          class="absolute left-0 top-0 flex w-[10.5rem] flex-col items-center gap-4 text-center"
+        >
+          <span class="flex size-24 items-center justify-center rounded-full bg-azul">
+            <img src={icono} alt="" aria-hidden="true" class="size-12 object-contain" />
+          </span>
+          <span class="font-duper text-[2.15rem] font-bold leading-[1.05] tracking-[-0.01em] text-azul">
+            {titulo}
+          </span>
+        </div>
+      ))
+    }
+  </div>
+
+  <Boton href="#productos" class="absolute bottom-12 right-10 z-40 md:bottom-16 md:right-16" data-cta>
+    Descubrilas
+  </Boton>
+
+</section>
+
+<script>
+  import gsap from 'gsap';
+  import { SplitText } from 'gsap/SplitText';
+  import { CustomEase } from 'gsap/CustomEase';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(SplitText, CustomEase, ScrollTrigger);
+
+  // cubic-bezier(1, 0, 0.15, 1): casi plana al principio, subida muy empinada
+  // en el medio y llegada seca. Es la curva del panel de interacción.
+  const GOLPE = CustomEase.create('golpe', 'M0,0 C1,0 0.15,1 1,1');
+
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Pivote vertical del transform de la botella, como fracción de su alto.
+  // Lo usan el tilt (para rotar desde ahí) y el centrado por scroll (que tiene
+  // que compensarlo, porque con un origen que no es el centro el escalado
+  // desplaza el elemento además de agrandarlo).
+  const ORIGEN_Y = 0.6;
+
+  // Inclinación de la botella en el hero. Antes era una clase de Tailwind,
+  // pero GSAP tiene que poder llevarla a 0 al centrarla en la segunda sección
+  // y no puede animar la propiedad `rotate` que genera Tailwind.
+  const INCLINACION = -7;
+  const botellaImg = document.querySelector<HTMLElement>('[data-botella-img]');
+  gsap.set(botellaImg, { rotation: INCLINACION });
+
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  const botella = document.querySelector<HTMLElement>('[data-botella]');
+
+  const cta = document.querySelector<HTMLElement>('[data-cta]');
+
+  if (!sinMovimiento) {
+    const DUR = 1.5;
+    // Reparto total del stagger de las letras. Sale de DUR, no se suma: las
+    // letras arrancan escalonadas pero todas cierran junto con el resto.
+    const REPARTO = 0.25;
+    const nav = document.querySelector<HTMLElement>('[data-nav]');
+
+    // Distancias medidas ANTES de mover nada, a partir de la posición real de
+    // cada elemento: así quedan justo fuera de cuadro en cualquier viewport.
+    const fueraDerecha = cta ? window.innerWidth - cta.getBoundingClientRect().left + 40 : 600;
+    const fueraArriba = nav ? -(nav.getBoundingClientRect().bottom + 10) : -120;
+
+    // Cuánto hay que bajar la botella para que quede justo debajo del corte
+    // inferior. Va en yPercent y no en y: el tilt del mouse usa `y`, y si
+    // ambos escribieran la misma propiedad se pisarían.
+    // El margen es mínimo a propósito: cada px de más es recorrido invisible,
+    // y es lo que antes comprimía todo el asomarse en los últimos frames.
+    let fueraAbajo = 60;
+    if (hero && botella) {
+      const cajaHero = hero.getBoundingClientRect();
+      const cajaBotella = botella.getBoundingClientRect();
+      fueraAbajo = ((cajaHero.bottom - cajaBotella.top + 15) / cajaBotella.height) * 100;
+    }
+
+    // Scroll bloqueado hasta que termine la entrada. Se aplica ya, en el mismo
+    // tick del script, para que no se pueda scrollear durante la espera de las
+    // tipografías.
+    const raiz = document.documentElement;
+    raiz.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+
+    let scrollLiberado = false;
+    const liberarScroll = () => {
+      if (scrollLiberado) return;
+      scrollLiberado = true;
+      raiz.style.overflow = '';
+      // El ScrollTrigger se crea recién acá, con el scroll ya desbloqueado.
+      // Si se creara antes mediría el documento sin recorrido y el pin quedaría
+      // con start/end viejos.
+      montarScroll();
+    };
+
+    // Red de seguridad. El scroll lo destraba el onComplete de la entrada, que
+    // corre sobre el ticker de GSAP; y el ticker se duerme cuando la pestaña
+    // está en segundo plano. Si la página carga sin foco, la entrada nunca
+    // termina y el scroll queda trabado. La entrada dura 1.5s, así que a los
+    // 4s ya se puede liberar sin riesgo de cortarla.
+    setTimeout(liberarScroll, 4000);
+
+    // Estado inicial aplicado ya, sin esperar a las fuentes. Si esto se hiciera
+    // recién dentro del fonts.ready, todo quedaría a la vista en su posición
+    // final durante la carga de la tipografía y se vería el salto al arrancar.
+    gsap.set('[data-nav]', { y: fueraArriba });
+    gsap.set('[data-linea]', { yPercent: 115 });
+    gsap.set('[data-botella]', { yPercent: fueraAbajo });
+    gsap.set('[data-cta]', { x: fueraDerecha });
+
+    // Se espera a que carguen las tipografías: SplitText mide el texto al
+    // partirlo, y con la fuente todavía sin cargar los cortes salen mal.
+    document.fonts.ready.then(() => {
+      const cortes = gsap.utils
+        .toArray<HTMLElement>('[data-linea]')
+        .map((linea) => new SplitText(linea, { type: 'chars' }));
+
+      // Orden diagonal: entran primero las letras de arriba a la izquierda y
+      // el frente avanza hacia abajo a la derecha.
+      const letras = cortes
+        .flatMap((corte) => corte.chars as HTMLElement[])
+        .sort((a, b) => {
+          const ra = a.getBoundingClientRect();
+          const rb = b.getBoundingClientRect();
+          return ra.left + ra.top - (rb.left + rb.top);
+        });
+
+      // Cada elemento arranca completamente fuera de cuadro: al principio solo
+      // se ve el fondo. Con expo.in el avance visual es casi nulo durante los
+      // primeros dos tercios, así que recién sobre el final asoman y entran
+      // de golpe.
+      // El estado oculto pasa de la línea entera a cada letra dentro del mismo
+      // tick sincrónico, así no se renderiza ningún frame intermedio.
+      gsap.set(letras, { yPercent: 115, x: -22 });
+      gsap.set('[data-linea]', { yPercent: 0 });
+
+      // Todos arrancan en 0 y cierran a la vez. expo.in deja el elemento casi
+      // quieto y resuelve el recorrido sobre el final: ese es el golpe.
+      gsap
+        .timeline({ defaults: { ease: GOLPE, duration: DUR }, onComplete: liberarScroll })
+        .to('[data-nav]', { y: 0 }, 0)
+        // Mismo ease y mismo cierre que el resto. `amount` reparte el total
+        // del escalonado entre todas las letras en vez de fijarlo por letra,
+        // así el desfasaje no crece con la cantidad de caracteres: la L asoma
+        // primero y el golpe final cae junto para todas.
+        .to(
+          letras,
+          { yPercent: 0, x: 0, duration: DUR - REPARTO, stagger: { amount: REPARTO } },
+          0
+        )
+        .to('[data-botella]', { yPercent: 0 }, 0)
+        .to('[data-cta]', { x: 0 }, 0);
+    });
+  }
+
+  // Mouse tilt 3D: la botella sigue al cursor sobre los ejes X e Y.
+  if (hero && botella && !sinMovimiento) {
+    const TILT_MAX = 14; // grados
+    const DESPLAZAMIENTO = 18; // px
+
+    gsap.set(botella, { transformPerspective: 900, transformOrigin: 'center 60%' });
+
+    // quickTo mantiene un solo tween vivo por propiedad: mucho más barato
+    // que crear un gsap.to() en cada pointermove.
+    const suave = { duration: 0.9, ease: 'power3.out' };
+    const aRotY = gsap.quickTo(botella, 'rotationY', suave);
+    const aRotX = gsap.quickTo(botella, 'rotationX', suave);
+    const aX = gsap.quickTo(botella, 'x', suave);
+    const aY = gsap.quickTo(botella, 'y', suave);
+
+    hero.addEventListener('pointermove', (evento) => {
+      const caja = hero.getBoundingClientRect();
+      // -0.5 .. 0.5 respecto del centro del hero
+      const nx = (evento.clientX - caja.left) / caja.width - 0.5;
+      const ny = (evento.clientY - caja.top) / caja.height - 0.5;
+
+      aRotY(nx * TILT_MAX * 2);
+      aRotX(-ny * TILT_MAX);
+      aX(nx * DESPLAZAMIENTO);
+      aY(ny * DESPLAZAMIENTO * 0.6);
+    });
+
+    hero.addEventListener('pointerleave', () => {
+      aRotY(0);
+      aRotX(0);
+      aX(0);
+      aY(0);
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Transición por scroll: el hero queda pineado y muta al estado final.
+  // Nav y titular se van hacia arriba, la botella se centra, la estela crece
+  // hasta cubrir el fondo y entran el aura suave y las tarjetas.
+  // ---------------------------------------------------------------------
+  const aura = document.querySelector<HTMLElement>('[data-aura="aura"]');
+  const auraSuave = document.querySelector<HTMLElement>('[data-aura="suave"]');
+  const contorno = document.querySelector<HTMLElement>('[data-contorno]');
+  const auraInterna = document.querySelector<HTMLElement>('[data-aura="interna"]');
+  const titular = document.querySelector<HTMLElement>('h1');
+  const navBarra = document.querySelector<HTMLElement>('[data-nav]');
+  const tarjetas = gsap.utils.toArray<HTMLElement>('[data-card]');
+  const halo = document.querySelector<HTMLElement>('[data-halo]');
+  const arcoItems = gsap.utils.toArray<HTMLElement>('[data-arco-item]');
+
+  // El centro del halo apoyado sobre el borde inferior del hero. Lo escribe
+  // GSAP y no una clase, porque la tercera sección lo baja todavía más.
+  gsap.set(halo, { yPercent: 50 });
+
+  // Los beneficios del arco no existen hasta la tercera sección.
+  gsap.set(arcoItems, { opacity: 0, xPercent: -50 });
+
+  // El aura suave arranca oculta ya mismo, no cuando se monta el scroll: si no,
+  // se vería durante toda la animación de entrada.
+  gsap.set(auraSuave, { opacity: 0, scale: 0.55 });
+
+  // Las tarjetas arrancan ocultas: son de la segunda sección y no tienen que
+  // verse durante la animación de entrada. La opacidad la enciende el scroll
+  // (ver montarScroll), no un tween de tiempo, así no aparecen solas.
+  gsap.set(tarjetas, { opacity: 0, y: () => window.innerHeight * 0.4 });
+
+  // Se declara como función (no como const) para poder llamarla desde el
+  // onComplete de la entrada, que está más arriba en el archivo.
+  function montarScroll() {
+    if (!aura || !hero || !botella) return;
+
+    // El degradé es sólido hasta el 46% del radio y se apaga al 72%. Para que
+    // el color llegue a las esquinas hay que escalar tomando ese tramo sólido
+    // como referencia, no el diámetro completo del elemento.
+    const TRAMO_SOLIDO = 0.5;
+    // Cuánto del alto del hero ocupa la botella una vez centrada.
+    const ALTO_FINAL = 0.86;
+
+    // offsetWidth/offsetHeight no se ven afectados por el transform, así que
+    // siguen sirviendo de base aunque el tween ya haya escalado el elemento.
+    const escalaBotella = () => (hero.offsetHeight * ALTO_FINAL) / botella.offsetHeight;
+
+    // La botella cuelga de `top-45%`. Para centrarla hay que subirla la
+    // diferencia entre ese anclaje y el centro real, expresada en yPercent:
+    // el tilt del mouse usa `y`, y si ambos escribieran lo mismo se pisarían.
+    const centrarBotella = () => {
+      const alto = botella.offsetHeight;
+      const escala = escalaBotella();
+      const arribaAhora = hero.offsetHeight * 0.45;
+      // Con el pivote en ORIGEN_Y, escalar corre el tope: top' = top + f·H·(1−s).
+      // Sin ese término la botella queda por encima del centro.
+      const centroTrasEscalar =
+        arribaAhora + ORIGEN_Y * alto * (1 - escala) + (alto * escala) / 2;
+      return ((hero.offsetHeight / 2 - centroTrasEscalar) / alto) * 100;
+    };
+
+    // ----- Tercera sección -------------------------------------------------
+    // El aura cuelga del borde de arriba: tapa todo el ancho y baja hasta el
+    // 70% del alto en su punto más bajo (el centro).
+    const ALCANCE_DOMO = 0.73;
+    // Ancho que el casquete tiene que cubrir, en veces el de la ventana. Más
+    // de 1 agranda el círculo: el arco se aplana y los costados bajan, así el
+    // aura se ve más ancha aunque llegue a la misma altura en el centro.
+    const ENSANCHE = 1.18;
+    // Dónde termina la botella una vez subida: mostrando de la mitad para
+    // abajo, bien adentro del aura.
+    const FONDO_BOTELLA = 0.62;
+    // Cuánto se meten los iconos hacia adentro del borde del aura.
+    const RETRO_ICONO = -74;
+    // Posición horizontal de cada beneficio, como fracción del ancho. La altura
+    // sale del arco. Se reparten por x y no por ángulo: al ensanchar el aura el
+    // radio crece, y con ángulos fijos los de los extremos se iban de pantalla.
+    const REPARTO_X = [0.115, 0.305, 0.5, 0.695, 0.885];
+
+    // El aura es un círculo con el centro por encima del borde superior. Para
+    // que tape todo el ancho, la cuerda a la altura de ese borde tiene que
+    // medir W: de ahí sale cuánto hay que levantar el centro.
+    //   media cuerda = √(R² − d²) = √(a² + 2ad) = W/2   con R = d + a
+    const domo = () => {
+      // innerWidth y no offsetWidth: con la barra de scroll presente el hero
+      // mide unos px menos, y el aura tiene que cubrir hasta el borde real.
+      // +48 de margen: el círculo está centrado en el ancho del hero pero tiene
+      // que cubrir hasta el borde de la ventana, que es unos px más ancho.
+      const ancho = (Math.max(hero.offsetWidth, window.innerWidth) + 48) * ENSANCHE;
+      const alto = hero.offsetHeight;
+      const visible = ALCANCE_DOMO * alto; // hasta dónde baja el casquete
+      const hundido = Math.max(0, ((ancho * ancho) / 4 - visible * visible) / (2 * visible));
+      return { hundido, radio: hundido + visible, cx: hero.offsetWidth / 2, cy: -hundido };
+    };
+
+    // El aura se escala desde su radio propio hasta el radio del domo.
+    const escalaDomo = () => domo().radio / (aura.offsetWidth / 2);
+
+    // Subida de la botella, en yPercent, respecto de su alto sin escalar.
+    // Ya centrada su base queda en H/2 + (alto·escala)/2; hay que llevarla a
+    // FONDO_BOTELLA·H.
+    const subirBotella = () => {
+      const alto = hero.offsetHeight;
+      const base = alto / 2 + (botella.offsetHeight * escalaBotella()) / 2;
+      return centrarBotella() - ((base - alto * FONDO_BOTELLA) / botella.offsetHeight) * 100;
+    };
+
+    // La luz chica sigue a la botella, pero centrada en el tramo que queda a
+    // la vista (0 → FONDO_BOTELLA·H) y no en la botella entera: si copiara el
+    // desplazamiento completo se iría por arriba del cuadro.
+    const subirLuz = () => -(hero.offsetHeight * (0.5 - FONDO_BOTELLA / 2));
+
+    // Los beneficios se apoyan sobre el arco: proyección polar desde el centro
+    // del domo. Se recalcula en cada refresh de ScrollTrigger (resize incluido).
+    const colocarArco = () => {
+      const { radio, cx, cy } = domo();
+      arcoItems.forEach((item, i) => {
+        const x = REPARTO_X[i] * hero.offsetWidth;
+        const dx = x - cx;
+        // Altura del borde del aura en esa x, menos lo que se meten hacia
+        // adentro. Se ancla por el centro del círculo azul y no por el centro
+        // del item: los títulos ocupan distinta cantidad de renglones y centrar
+        // la caja entera dejaría los círculos desalineados respecto del arco.
+        const borde = cy + Math.sqrt(Math.max(0, radio * radio - dx * dx));
+        const disco = item.firstElementChild as HTMLElement;
+        gsap.set(item, { x, y: borde - RETRO_ICONO - disco.offsetHeight / 2 });
+      });
+    };
+    colocarArco();
+    ScrollTrigger.addEventListener('refresh', colocarArco);
+
+    gsap
+      .timeline({
+        // Mismo ease que la entrada: arranca lento y resuelve sobre el final.
+        // Con scrub esto no es una curva de tiempo sino de scroll — el avance
+        // por píxel scrolleado deja de ser lineal.
+        defaults: { ease: GOLPE },
+        scrollTrigger: {
+          trigger: hero,
+          start: 'top top',
+          // No hay contenido debajo todavía: el pin es lo que genera el
+          // recorrido de scroll. Al agregar secciones sigue funcionando igual.
+          end: '+=440%',
+          // Más alto = el scroll arrastra la animación con más inercia.
+          scrub: 1.4,
+          pin: true,
+          // Recalcula escalas y distancias al redimensionar.
+          invalidateOnRefresh: true,
+        },
+      })
+      // El halo ya no es un círculo: hay que cubrir ancho y alto por separado
+      // y quedarse con el factor mayor, o el eje corto deja esquinas sin pintar.
+      .to(
+        [aura, contorno, auraInterna].filter(Boolean) as HTMLElement[],
+        {
+          scale: () =>
+            Math.max(
+              hero.offsetWidth / (aura.offsetWidth * TRAMO_SOLIDO),
+              hero.offsetHeight / (aura.offsetHeight * TRAMO_SOLIDO)
+            ),
+          duration: 1,
+        },
+        0
+      )
+      // La estela vive al 72% en el hero para no taparlo, pero el fondo de la
+      // segunda sección tiene que ser #CED500 exacto: con opacidad parcial
+      // quedaría mezclado con el lima de abajo.
+      .to(aura, { opacity: 1, duration: 0.6 }, 0)
+      // El contorno y el círculo interno se apagan durante la expansión: si
+      // escalaran visibles, el interno (#E6EA7F) terminaría cubriendo el centro
+      // y el fondo de la segunda sección no quedaría en #CED500.
+      .to([contorno, auraInterna].filter(Boolean) as HTMLElement[], { opacity: 0, duration: 0.35 }, 0.1)
+      .to(navBarra, { y: () => -(navBarra!.getBoundingClientRect().height + 60), opacity: 0, duration: 0.45 }, 0)
+      .to(titular, { yPercent: -140, opacity: 0, duration: 0.5 }, 0)
+      .to(botella, { yPercent: centrarBotella, scale: escalaBotella, duration: 1 }, 0)
+      // En la segunda sección la botella va derecha.
+      .to(botellaImg, { rotation: 0, duration: 1 }, 0)
+      .to(auraSuave, { opacity: 1, scale: 1, duration: 0.35 }, 0.62)
+      // Las tarjetas suben durante TODO el recorrido, sin tocar la opacidad:
+      // están siempre presentes y llegan a su lugar junto con el resto.
+      // `amount` reparte el escalonado total, así el conjunto cierra en 1.
+      //
+      // fromTo y no to: con `invalidateOnRefresh` el tween vuelve a leer su
+      // valor de partida del estado actual del elemento, y si ya llegó a y:0
+      // el arranque queda en 0 y la tarjeta deja de moverse. Declarando el
+      // origen explícito (y como función, para que se recalcule al redimensionar)
+      // el recorrido sobrevive a cualquier refresh.
+      .fromTo(
+        tarjetas,
+        {
+          // Offset calculado por tarjeta: cada una arranca justo debajo del
+          // borde inferior del hero. Un valor único no sirve porque las cuatro
+          // tienen distinto `top` y las de arriba quedarían asomando en la
+          // primera sección. offsetTop es la posición sin transformar, así que
+          // no se contamina con lo que el propio tween ya haya escrito.
+          y: (_i: number, objetivo: HTMLElement) =>
+            hero.offsetHeight - objetivo.offsetTop + 40,
+        },
+        { y: 0, duration: 0.62, stagger: { amount: 0.08 } },
+        // Arrancan al 30% en vez de al 50%. Con la curva GOLPE el avance es
+        // casi nulo al principio, así que empezando en 0.5 recién se las veía
+        // pasado el 75% del recorrido. La duración se estira en la misma
+        // medida (0.62 + 0.08 de stagger) para que igual cierren en 1.
+        0.3
+      )
+      // La opacidad se enciende junto con el movimiento, con ease lineal y
+      // duración corta. Sin esto quedan invisibles: el gsap.set de más arriba
+      // las apaga para que no se vean durante la entrada, y nada las prendía.
+      // No comparte la curva GOLPE porque esa avanza muy poco al principio y
+      // las dejaría semitransparentes casi todo el recorrido.
+      .fromTo(tarjetas, { opacity: 0 }, { opacity: 1, duration: 0.06, ease: 'none' }, 0.3)
+
+      // ----- Etapa 3 ------------------------------------------------------
+      // Arranca en 1.05, apenas después de que cierra la segunda sección, y
+      // ocupa otra unidad de tiempo: con end en +=440% el recorrido queda
+      // repartido más o menos por mitades entre las dos transiciones.
+      //
+      // El aura no se apaga ni se reemplaza: es la misma que venía llenando
+      // el fondo, que se encoge hasta el tamaño del domo.
+      .to(aura, { scale: escalaDomo, duration: 1 }, 1.05)
+      // El centro del círculo sube por encima del borde superior: el aura pasa
+      // de estar apoyada abajo a colgar de arriba, y lo que queda a la vista es
+      // un casquete ancho y chato en vez de una burbuja.
+      // El yPercent 50 del halo ya aporta media caja, así que `y` solo tiene
+      // que descontar el alto del hero más lo que se levanta el centro.
+      .to(halo, { y: () => -(hero.offsetHeight + domo().hundido), duration: 1 }, 1.05)
+      // La botella sube hasta dejar a la vista solo su mitad de abajo.
+      .to(botella, { yPercent: subirBotella, duration: 1 }, 1.05)
+      .to(auraSuave, { y: subirLuz, duration: 1 }, 1.05)
+      // Las tarjetas de la segunda sección se van con el mismo gesto con el
+      // que entraron, hacia abajo.
+      .to(tarjetas, { opacity: 0, duration: 0.25, ease: 'none' }, 1.05)
+      .to(tarjetas, { y: () => hero.offsetHeight * 0.3, duration: 0.5 }, 1.05)
+      // El "Descubrilas" es de las dos primeras secciones: se va por donde vino.
+      // offsetLeft y no getBoundingClientRect: no lo afecta el transform, así
+      // que la distancia sale bien aunque se recalcule con el tween a medias.
+      .to(cta, { x: () => window.innerWidth - cta!.offsetLeft + 40, duration: 0.5 }, 1.05)
+      // Los beneficios del arco quedan quietos: solo se encienden. La posición
+      // ya la fijó colocarArco().
+      .to(arcoItems, { opacity: 1, duration: 0.3, ease: 'none' }, 1.6);
+  }
+
+  // Sin animación de entrada no hay onComplete que dispare el montaje.
+  if (sinMovimiento) montarScroll();
+
+  // Recién acá se destapa el hero: a esta altura ya corrieron todos los
+  // gsap.set() sincrónicos, así que el primer frame visible muestra los
+  // elementos en su posición de arranque y no apilados en la final.
+  document.documentElement.setAttribute('data-listo', '');
+</script>

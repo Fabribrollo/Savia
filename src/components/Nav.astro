@@ -1,0 +1,43 @@
+---
+const izquierda = [
+  { label: 'Nosotros', href: '#nosotros' },
+  { label: 'Productos', href: '#productos' },
+];
+
+const derecha = [
+  { label: 'Reviews', href: '#reviews' },
+  { label: 'Contacto', href: '#contacto' },
+];
+
+const enlace =
+  'relative z-10 font-duper text-xl font-bold text-azul transition-opacity hover:opacity-60 md:text-[1.4rem]';
+---
+
+<nav
+  data-nav
+  class="absolute inset-x-0 top-5 z-30 flex justify-center px-4 md:top-7"
+  aria-label="Principal"
+>
+  <!--
+    Liquid glass sutil: el efecto lo hace el backdrop-filter, no el tinte.
+    Sin sombra y con tinte mínimo, la pastilla se lee como vidrio y no como
+    una pastilla blanca apoyada encima.
+  -->
+  <div
+    class="relative flex items-center gap-7 overflow-hidden rounded-full border border-white/35 bg-white/14 px-8 py-3.5 backdrop-blur-md backdrop-saturate-[1.2] md:gap-14 md:px-12 md:py-4"
+  >
+    <!-- Reflejo apenas insinuado sobre el borde superior -->
+    <span
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent"
+    ></span>
+
+    {izquierda.map(({ label, href }) => <a href={href} class={enlace}>{label}</a>)}
+
+    <a href="/" class="relative z-10 shrink-0" aria-label="Savia — inicio">
+      <img src="/icons/logo.svg" alt="Savia" class="h-5 w-auto md:h-7" />
+    </a>
+
+    {derecha.map(({ label, href }) => <a href={href} class={enlace}>{label}</a>)}
+  </div>
+</nav>
