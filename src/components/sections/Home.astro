@@ -74,7 +74,7 @@ const arcoBeneficios = [
   <!-- Frutas del fondo. z-0 y primeras en el DOM: quedan detrás del titular
        (z-10), de la botella (z-20) y del aura, que es lo que las tapa en la
        mitad de abajo cuando arranca el scroll. -->
-  <div data-frutas aria-hidden="true" class="pointer-events-none absolute inset-0 z-0">
+  <div data-frutas aria-hidden="true" class="absolute inset-0 z-0">
     {
       frutas.map(({ tipo, pos, tam, giro }) => (
         <span
@@ -88,7 +88,10 @@ const arcoBeneficios = [
   <Nav />
 
   <h1
-    class="relative z-10 px-4 pt-32 text-center font-duper font-bold uppercase leading-[0.82] tracking-[-0.015em] text-azul md:pt-36"
+    {/* pointer-events-none: la caja del titular cubre buena parte del hero y
+        atajaba el hover de las frutas del fondo aunque el texto sea
+        transparente. No es interactivo, así que no pierde nada. */}
+    class="pointer-events-none relative z-10 px-4 pt-32 text-center font-duper font-bold uppercase leading-[0.82] tracking-[-0.015em] text-azul md:pt-36"
     style="font-size: clamp(2.75rem, 12.4vw, 11.5rem);"
   >
     {/* Cada renglón va dentro de una máscara con overflow-hidden: el texto
@@ -255,6 +258,24 @@ const arcoBeneficios = [
     mask-repeat: no-repeat;
     -webkit-mask-position: center;
     mask-position: center;
+
+    /* El contenedor ya no bloquea el puntero, pero cada fruta sí tiene que
+       recibirlo para el hover. */
+    pointer-events: auto;
+    transition:
+      scale 320ms ease-out,
+      background-color 320ms ease-out,
+      filter 320ms ease-out;
+  }
+
+  /* Muy leve a propósito: son fondo, no un elemento interactivo. Se usa la
+     propiedad `scale` y no un transform, así no pisa el `rotate` que cada
+     fruta trae en su style inline. El drop-shadow toma la silueta de la
+     máscara, así que el brillo sale con la forma de la fruta. */
+  .fruta:hover {
+    scale: 1.03;
+    background-color: #aab200;
+    filter: drop-shadow(0 0 10px rgba(206, 213, 0, 0.45));
   }
 </style>
 
