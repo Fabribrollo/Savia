@@ -5,11 +5,6 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
-  // OJO: dominio de prueba. Cambialo por el real antes de publicar.
-  // De acá salen las URL absolutas de las metaetiquetas Open Graph: las
-  // relativas no sirven, los scrapers de WhatsApp y Facebook las descartan.
-  site: 'https://savia.com',
-
   server: {
     port: 4321,
     host: true,
