@@ -15,9 +15,11 @@
   --color-marco: #141414;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/* Sin `scroll-behavior: smooth`. El nativo avanza a velocidad constante en
+   píxeles, y el hero pineado mete 3168px de recorrido en los que la vista no
+   se mueve: al ir del nav a #productos se sentía como una pausa larga en la
+   segunda sección. Los saltos internos los anima GSAP con duración fija
+   (ver Home.astro), así la distancia deja de importar. */
 
 /* Sin capa, así que gana sobre las utilidades de Tailwind (que van en @layer).
    Es el color que se ve al hacer overscroll, más allá del alto del documento. */

@@ -1,0 +1,56 @@
+---
+// Las tres botellas comparten recorte (854×2287 exactos), así que a igual
+// alto quedan a la misma escala y alineadas sin compensar nada.
+//
+// Van en el flujo, sin `absolute`: el solape lo hacen los márgenes negativos y
+// el orden de apilado lo decide el z-index, que en un contenedor flex vale
+// aunque los items sean `position: static`. El tamaño se fija por alto y el
+// ancho sale solo; con `max-h` las tres quedarían topadas a la misma altura y
+// la del centro terminaría siendo la más chica.
+const botellas = [
+  {
+    nombre: 'Naranja & Jengibre',
+    imagen: '/images/naranja-trim.png',
+    // Las laterales van apenas más bajas y corridas: eso alcanza para mandarlas
+    // hacia atrás. Sin desplazamiento vertical, así las tres bases coinciden
+    // (de eso se encarga el `items-end` del contenedor).
+    clase: 'z-10 h-[64vh] -mr-11',
+  },
+  {
+    nombre: 'Frutos Rojos',
+    imagen: '/images/rojo-trim.png',
+    clase: 'z-20 h-[70vh]',
+  },
+  {
+    nombre: 'Lima & Menta',
+    imagen: '/images/amarillo-trim.png',
+    clase: 'z-10 h-[64vh] -ml-11',
+  },
+];
+---
+
+<section
+  id="favorita"
+  class="relative isolate flex min-h-dvh flex-col items-center justify-center gap-10 overflow-hidden bg-[#66AAD4]"
+>
+  <h2 class="text-center font-duper text-6xl font-bold text-[#850E10]">
+    Encontrá tu favorita
+  </h2>
+
+  <div class="flex items-end justify-center">
+    {
+      botellas.map(({ nombre, imagen, clase }) => (
+        <img
+          src={imagen}
+          alt={`Botella de jugo Savia sabor ${nombre}`}
+          width="854"
+          height="2287"
+          class:list={[
+            'w-auto object-contain drop-shadow-[0_30px_50px_rgba(90,100,20,0.28)]',
+            clase,
+          ]}
+        />
+      ))
+    }
+  </div>
+</section>

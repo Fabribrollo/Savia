@@ -21,6 +21,14 @@ const fontUrl = "https://use.typekit.net/fam5ams.css"
     <title>{title}</title>
     <meta name="description" content={description} />
     <script is:inline>
+      // Al recargar, el navegador restaura la posición de scroll anterior y la
+      // página aparecería en mitad de la animación. Va en el <head> y sin
+      // defer: tiene que correr antes de que el navegador restaure.
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.addEventListener('load', function () {
+        window.scrollTo(0, 0);
+      });
+
       // Red de seguridad. El hero arranca con visibility:hidden y lo destapa
       // el script de la animación; si ese módulo falla o no carga, la página
       // quedaría en blanco. A los 2s se muestra igual.
@@ -29,7 +37,7 @@ const fontUrl = "https://use.typekit.net/fam5ams.css"
       }, 2000);
     </script>
   </head>
-  <body class="min-h-dvh bg-lima">
+  <body class="min-h-dvh ">
     <slot />
   </body>
 </html>

@@ -1,0 +1,58 @@
+---
+import Boton from "../Boton.astro";
+
+
+---
+
+<section
+  id="banner"
+  data-hero
+  class="relative isolate flex min-h-dvh h-full flex-col overflow-hidden"
+>
+{/* flex-1 y no h-full: la <section> define su alto con `min-height`, y los
+    porcentajes de `height` solo miden contra un `height` real del padre. Al no
+    encontrarlo, `h-full` se resolvía a `auto` y el div quedaba del alto del
+    texto. Como la section es flex-col, `flex-1` sí lo estira hasta el fondo. */}
+<div class="flex flex-1  w-full flex-col bg-[url('/images/banner.jpg')] bg-cover bg-center">
+    
+<div class="my-25 mx-10">
+
+
+  <h2 class="text-start text-7xl font-bold text-[#CED500] font-duper max-w-[500px]">
+    Cada día tiene un movimiento
+  </h2>
+  <h5 class="test-start text-xl font-futura text-lg text-[#FFEDC2] my-4 font-medium">
+    Cada movimiento tiene una Savia.
+  </h5>
+
+  {/* `relative` va acá y no en el componente: el círculo del hover se
+      posiciona contra el botón, y este no lleva `absolute` como el del hero.
+      `self-start` para que el flex-col del contenedor no lo estire a lo ancho. */}
+  <Boton
+    href="#momento"
+    fondo="bg-aura"
+    texto="text-[#FFF8E7]"
+    tamano="px-7 py-2 text-xl"
+    flecha={false}
+    class="relative self-start"
+  >
+    Encontrá tu momento
+  </Boton>
+
+</div>
+</div>
+
+{/* Separador montado sobre el pie de la sección: va absolute para que se
+    superponga a la imagen de fondo en vez de empujarla y alargar la sección.
+    `inset-x-0` le da todo el ancho y el alto sale de la proporción del SVG. */}
+<img
+  src="/icons/separador.svg"
+  alt=""
+  aria-hidden="true"
+  class="pointer-events-none absolute inset-x-0 bottom-0 z-10 block w-full"
+/>
+
+
+
+
+</section>

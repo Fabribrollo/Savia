@@ -33,6 +33,27 @@ const beneficios = [
   },
 ];
 
+// Frutas del fondo de la primera sección. Se pintan con `mask-image`, no como
+// <img>: así el color sale del CSS (#9BA200) y no del archivo, y alcanza con
+// tocar una variable para cambiarlo. Los SVG traen un opacity 0.21 adentro,
+// que es lo que las deja como marca de agua.
+const frutas = [
+  // Arriba a la izquierda, grande, apoyada contra la L del titular.
+  { tipo: 'frutilla', pos: 'left-[3.5%] top-[7%]', tam: '12vw', giro: -18 },
+  // Metida en el borde izquierdo: se sale de cuadro y el overflow la corta.
+  { tipo: 'frutilla', pos: 'left-[-6%] top-[46%]', tam: '12.75vw', giro: 14 },
+  // Dos arándanos repartidos en la zona izquierda.
+  { tipo: 'arandano', pos: 'left-[21%] top-[36%]', tam: '4.5vw', giro: -8 },
+  { tipo: 'arandano', pos: 'left-[10%] top-[74%]', tam: '5.25vw', giro: 22 },
+  // En el medio del titular, tamaño mediano.
+  { tipo: 'frutilla', pos: 'left-[45%] top-[21%]', tam: '7.9vw', giro: 10 },
+  // Zona derecha: tres arándanos y una frutilla, todos medianos.
+  { tipo: 'arandano', pos: 'right-[7%] top-[13%]', tam: '4.9vw', giro: 12 },
+  { tipo: 'frutilla', pos: 'right-[10%] top-[33%]', tam: '8.25vw', giro: -12 },
+  { tipo: 'arandano', pos: 'right-[21%] top-[57%]', tam: '4.1vw', giro: -20 },
+  { tipo: 'arandano', pos: 'right-[4%] top-[72%]', tam: '5.25vw', giro: 6 },
+];
+
 // Tercera sección: los 5 títulos se acomodan sobre el arco del domo, en el
 // orden en que quedan de izquierda a derecha. El ángulo (en grados, 0 = cima
 // del domo) lo asigna el script a partir de la posición en el array.
@@ -50,6 +71,20 @@ const arcoBeneficios = [
   data-hero
   class="relative isolate flex min-h-dvh flex-col overflow-hidden bg-lima"
 >
+  <!-- Frutas del fondo. z-0 y primeras en el DOM: quedan detrás del titular
+       (z-10), de la botella (z-20) y del aura, que es lo que las tapa en la
+       mitad de abajo cuando arranca el scroll. -->
+  <div data-frutas aria-hidden="true" class="pointer-events-none absolute inset-0 z-0">
+    {
+      frutas.map(({ tipo, pos, tam, giro }) => (
+        <span
+          class:list={['fruta absolute block', pos]}
+          style={`width:${tam};aspect-ratio:1;rotate:${giro}deg;--fruta:url(/icons/${tipo}.svg)`}
+        />
+      ))
+    }
+  </div>
+
   <Nav />
 
   <h1
@@ -97,7 +132,7 @@ const arcoBeneficios = [
         size="min(43vw, 628px)"
         offsetY="0%"
         intensidad={1}
-        nucleo="95%"
+        nucleo="80%"
         fin="100%"
       />
 
@@ -154,13 +189,13 @@ const arcoBeneficios = [
         asomaba 38px por lado y no se leía; 38vw deja ~130px visibles.
         El núcleo alto mantiene color pleno hasta pasado el borde de la
         botella, en vez de empezar a apagarse detrás de ella. */}
-    <div class="relative aspect-square w-[38vw] max-w-[550px]">
+    <div class="relative aspect-square w-[46vw] max-w-[660px]">
       <Aura
         marca="suave"
         size="100%"
         offsetY="0%"
         intensidad={1}
-        nucleo="28%"
+        nucleo="52%"
         fin="100%"
         color="var(--color-aura-suave)"
       />
@@ -207,13 +242,30 @@ const arcoBeneficios = [
 
 </section>
 
+<style>
+  /* El SVG se usa de máscara y el color lo pone el background: el archivo
+     aporta la silueta, la hoja de estilos aporta el tono. */
+  .fruta {
+    background-color: #9ba200;
+    -webkit-mask-image: var(--fruta);
+    mask-image: var(--fruta);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+</style>
+
 <script>
   import gsap from 'gsap';
   import { SplitText } from 'gsap/SplitText';
   import { CustomEase } from 'gsap/CustomEase';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 
-  gsap.registerPlugin(SplitText, CustomEase, ScrollTrigger);
+  gsap.registerPlugin(SplitText, CustomEase, ScrollTrigger, ScrollToPlugin);
 
   // cubic-bezier(1, 0, 0.15, 1): casi plana al principio, subida muy empinada
   // en el medio y llegada seca. Es la curva del panel de interacción.
@@ -398,14 +450,28 @@ const arcoBeneficios = [
   // Los beneficios del arco no existen hasta la tercera sección.
   gsap.set(arcoItems, { opacity: 0, xPercent: -50 });
 
-  // El aura suave arranca oculta ya mismo, no cuando se monta el scroll: si no,
-  // se vería durante toda la animación de entrada.
-  gsap.set(auraSuave, { opacity: 0, scale: 0.55 });
+  // El aura suave ya existe en el hero: arranca calzada encima del círculo
+  // interno del anillo (mismo centro, mismo diámetro) para que se lean como uno
+  // solo, y de ahí en más viaja con la botella. Antes aparecía de la nada a
+  // mitad del scroll.
+  // La opacidad de partida es parcial porque abajo está el `interna`: sumadas
+  // dan la densidad del hero, y a medida que ese se apaga, esta sube a 1.
+  const escalaLuzHero = () =>
+    auraInterna && auraSuave ? auraInterna.offsetWidth / auraSuave.offsetWidth : 0.78;
+  // El aura suave está centrada en el viewport; el anillo del hero tiene su
+  // centro sobre el borde de abajo. La diferencia es medio alto del hero.
+  const bajarLuzAlHero = () => (hero ? hero.offsetHeight / 2 : 0);
+
+  gsap.set(auraSuave, { opacity: 0.55, scale: escalaLuzHero(), y: bajarLuzAlHero() });
 
   // Las tarjetas arrancan ocultas: son de la segunda sección y no tienen que
   // verse durante la animación de entrada. La opacidad la enciende el scroll
   // (ver montarScroll), no un tween de tiempo, así no aparecen solas.
   gsap.set(tarjetas, { opacity: 0, y: () => window.innerHeight * 0.4 });
+
+  // El ScrollTrigger del hero, para poder tocarle el scrub en los saltos de
+  // ancla (ver más abajo). Se llena recién al montarlo.
+  let disparadorHero: ScrollTrigger | undefined;
 
   // Se declara como función (no como const) para poder llamarla desde el
   // onComplete de la entrada, que está más arriba en el archivo.
@@ -507,7 +573,7 @@ const arcoBeneficios = [
     colocarArco();
     ScrollTrigger.addEventListener('refresh', colocarArco);
 
-    gsap
+    const lineaHero = gsap
       .timeline({
         // Mismo ease que la entrada: arranca lento y resuelve sobre el final.
         // Con scrub esto no es una curva de tiempo sino de scroll — el avance
@@ -547,13 +613,37 @@ const arcoBeneficios = [
       // El contorno y el círculo interno se apagan durante la expansión: si
       // escalaran visibles, el interno (#E6EA7F) terminaría cubriendo el centro
       // y el fondo de la segunda sección no quedaría en #CED500.
-      .to([contorno, auraInterna].filter(Boolean) as HTMLElement[], { opacity: 0, duration: 0.35 }, 0.1)
+      // Ease lineal y no GOLPE: con la curva del resto, el anillo del hero se
+      // apagaba entero entre el 10% y el 20% del recorrido y el corte con la
+      // primera sección se notaba. Lineal y estirado, el anillo se disuelve al
+      // mismo ritmo con el que el disco crece.
+      .to(
+        [contorno, auraInterna].filter(Boolean) as HTMLElement[],
+        { opacity: 0, duration: 0.62, ease: 'none' },
+        0.04
+      )
       .to(navBarra, { y: () => -(navBarra!.getBoundingClientRect().height + 60), opacity: 0, duration: 0.45 }, 0)
       .to(titular, { yPercent: -140, opacity: 0, duration: 0.5 }, 0)
       .to(botella, { yPercent: centrarBotella, scale: escalaBotella, duration: 1 }, 0)
       // En la segunda sección la botella va derecha.
       .to(botellaImg, { rotation: 0, duration: 1 }, 0)
-      .to(auraSuave, { opacity: 1, scale: 1, duration: 0.35 }, 0.62)
+      // La luz acompaña a la botella durante todo el recorrido, con la misma
+      // duración y curva que ella: sube del borde de abajo al centro mientras
+      // crece. Sin esto aparecía recién sobre el final y se leía como un
+      // elemento nuevo en vez de como el mismo halo que venía del hero.
+      // fromTo y no to: con `invalidateOnRefresh` un `to` vuelve a leer su
+      // valor de partida del estado actual, y si el refresh cae con la
+      // timeline al final el arranque queda en y:0 y la luz deja de moverse.
+      // Con el origen declarado (y como función, para el resize) sobrevive.
+      .fromTo(
+        auraSuave,
+        { y: bajarLuzAlHero, scale: escalaLuzHero },
+        { y: 0, scale: 1, duration: 1 },
+        0
+      )
+      // La opacidad sube lineal, al mismo ritmo con el que se apaga el círculo
+      // interno del anillo: entre los dos la densidad se mantiene pareja.
+      .fromTo(auraSuave, { opacity: 0.55 }, { opacity: 1, duration: 0.62, ease: 'none' }, 0.04)
       // Las tarjetas suben durante TODO el recorrido, sin tocar la opacidad:
       // están siempre presentes y llegan a su lugar junto con el resto.
       // `amount` reparte el escalonado total, así el conjunto cierra en 1.
@@ -616,10 +706,55 @@ const arcoBeneficios = [
       // Los beneficios del arco quedan quietos: solo se encienden. La posición
       // ya la fijó colocarArco().
       .to(arcoItems, { opacity: 1, duration: 0.3, ease: 'none' }, 1.6);
+
+    disparadorHero = lineaHero.scrollTrigger;
   }
 
   // Sin animación de entrada no hay onComplete que dispare el montaje.
   if (sinMovimiento) montarScroll();
+
+  // ---------------------------------------------------------------------
+  // Saltos internos (nav y CTA). Duración fija en vez del smooth nativo: el
+  // hero pineado agrega 3168px de recorrido que la vista no recorre, y a
+  // velocidad constante ese tramo se sentía como una pausa. Con una duración
+  // fija la distancia deja de importar y el salto dura siempre lo mismo.
+  // Delegado en el document para que valga también para lo que se agregue después.
+  // ---------------------------------------------------------------------
+  document.addEventListener('click', (evento) => {
+    const objetivo = evento.target as HTMLElement | null;
+    const enlace = objetivo?.closest?.('a[href^="#"]') as HTMLAnchorElement | null;
+    if (!enlace) return;
+
+    const ancla = enlace.getAttribute('href');
+    if (!ancla || ancla === '#') return;
+
+    const destino = document.querySelector<HTMLElement>(ancla);
+    if (!destino) return;
+
+    evento.preventDefault();
+
+    // El hero pineado se come el 81% del recorrido, y en ese tramo la pantalla
+    // no se desplaza: solo avanza la animación. Con scrub 1.4 esa animación va
+    // 1.4s atrás del scroll, así que en un salto rápido queda colgada en la
+    // segunda sección mientras el scroll ya pasó de largo, y se lee como una
+    // pausa. Durante el salto el scrub baja a casi cero para que la animación
+    // vaya pegada al scroll, y se restaura al terminar.
+    const scrub = disparadorHero?.getTween();
+    const scrubOriginal = scrub?.duration();
+    if (scrub) scrub.duration(0.1);
+    const restaurarScrub = () => {
+      if (scrub && scrubOriginal) scrub.duration(scrubOriginal);
+    };
+
+    gsap.to(window, {
+      duration: 1.1,
+      ease: 'power2.inOut',
+      // autoKill: si el usuario mueve la rueda, el tween se corta y le
+      // devuelve el control en vez de pelearle el scroll.
+      scrollTo: { y: destino, autoKill: true, onAutoKill: restaurarScrub },
+      onComplete: restaurarScrub,
+    });
+  });
 
   // Recién acá se destapa el hero: a esta altura ya corrieron todos los
   // gsap.set() sincrónicos, así que el primer frame visible muestra los

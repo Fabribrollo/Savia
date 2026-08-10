@@ -1,30 +1,75 @@
 ---
 import type { HTMLAttributes } from 'astro/types';
 
-interface Props extends HTMLAttributes<'a'> {}
+interface Props extends HTMLAttributes<'a'> {
+  /** Utilidad de fondo en reposo. Va como prop y no como clase suelta porque
+   *  entre dos utilidades `bg-*` el orden lo decide la hoja, no el atributo. */
+  fondo?: string;
+  /** Utilidad de color del texto, para que contraste con el fondo elegido. */
+  texto?: string;
+  /** Padding y tipografía. Mismo motivo que `fondo`: entre utilidades de la
+   *  misma propiedad el orden lo decide la hoja, no el atributo. */
+  tamano?: string;
+  /** Flecha al final del texto. */
+  flecha?: boolean;
+}
 
 // El resto de los atributos (data-*, target, rel…) se reenvían al <a>.
 // Sin este spread, Astro los descarta silenciosamente.
-const { href = '#', class: clase = '', ...resto } = Astro.props;
+const {
+  href = '#',
+  class: clase = '',
+  fondo = 'bg-vino',
+  texto = 'text-crema',
+  tamano = 'px-10 py-4 text-3xl md:text-[2.1rem]',
+  flecha = true,
+  ...resto
+} = Astro.props;
 ---
 
 <a
   href={href}
   class:list={[
-    // El hover va por filter y no por transform: GSAP escribe el transform en
-    // cada frame y una transition sobre esa misma propiedad se pelea con él.
-    'inline-flex items-center gap-5 rounded-full bg-vino px-16 py-6 font-duper text-3xl font-bold text-crema transition-[filter] duration-200 hover:brightness-125 md:text-[2.1rem]',
+    // `group` + `overflow-hidden`: el hover lo hace un círculo que crece
+    // adentro del botón, y el recorte es lo que lo convierte en un barrido.
+    // Ojo: acá NO va `relative`. En Tailwind esa utilidad gana sobre el
+    // `absolute` que le pasa quien lo usa (el orden lo decide la hoja, no el
+    // atributo) y el botón perdería su posición. El contexto para el círculo
+    // lo aporta el `absolute` del consumidor; si algún día se usa sin
+    // posicionar, hay que agregarle `relative` desde afuera.
+    'group isolate inline-flex items-center gap-5 overflow-hidden rounded-full font-duper font-bold',
+    tamano,
+    fondo,
+    texto,
     clase,
   ]}
   {...resto}
 >
+  {/*
+    Círculo centrado en la esquina superior izquierda. Escala de 0 a 1 al
+    hacer hover y vuelve a 0 al salir con la misma curva, así la reversa es
+    idéntica. Mide 260% del ancho del botón: el radio (130%) supera siempre
+    la diagonal, así que al llegar a escala 1 no queda ninguna esquina sin
+    pintar. La transición va sobre `transform` del span, no del <a>, para no
+    pelearse con el `x` que GSAP le escribe al botón en la entrada.
+  */}
+  <span
+    aria-hidden="true"
+    class="pointer-events-none absolute left-0 top-0 -z-10 aspect-square w-[260%] -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full bg-azul transition-transform duration-[400ms] ease-in-out group-hover:scale-100"
+  ></span>
+
   <slot />
-  <svg width="27" height="27" viewBox="0 0 18 18" fill="none" aria-hidden="true" class="shrink-0">
-    <path
-      d="M4.5 13.5 13.5 4.5M6 4.5h7.5V12"
-      stroke="currentColor"
-      stroke-width="2.2"
-      stroke-linecap="round"
-      stroke-linejoin="round"></path>
-  </svg>
+  {
+    flecha && (
+      <svg width="27" height="27" viewBox="0 0 18 18" fill="none" aria-hidden="true" class="shrink-0">
+        <path
+          d="M4.5 13.5 13.5 4.5M6 4.5h7.5V12"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    )
+  }
 </a>
