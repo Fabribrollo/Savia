@@ -3,6 +3,8 @@ import Layout from '../layouts/Layout.astro';
 import Favorita from '../components/sections/Favorita.astro';
 ---
 
-<Layout title="Savia — Lo natural en movimiento" description="Jugos naturales Savia.">
+{/* noIndexar: es una página de trabajo, no tiene que competir con la home
+    en buscadores ni salir indexada si queda publicada por descuido. */}
+<Layout title="Prueba — Favorita" description="Página de trabajo." noIndexar>
   <Favorita />
 </Layout>

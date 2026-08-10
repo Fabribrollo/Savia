@@ -1,0 +1,35 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Boton from '../components/Boton.astro';
+
+// Astro sirve este archivo en cualquier ruta que no exista. En dev se ve
+// entrando a una URL inventada; en producción lo tiene que devolver el host
+// con estado 404 (Netlify, Vercel y Cloudflare Pages lo hacen solos).
+---
+
+<Layout
+  title="Savia — Página no encontrada"
+  description="La página que buscabas no existe. Volvé al inicio para conocer los jugos Savia."
+  noIndexar
+>
+  <main
+    class="relative isolate flex min-h-dvh flex-col items-center justify-center gap-8 overflow-hidden bg-lima px-6 text-center"
+  >
+    <p
+      class="font-duper font-bold leading-none text-azul"
+      style="font-size: clamp(6rem, 22vw, 16rem);"
+    >
+      404
+    </p>
+
+    <h1 class="max-w-[26ch] font-duper text-4xl font-bold uppercase leading-[0.95] text-azul md:text-6xl">
+      Esta página se fue en movimiento
+    </h1>
+
+    <p class="max-w-[45ch] font-futura text-lg text-vino">
+      El link que seguiste no lleva a ningún lado. Volvé al inicio y descubrí los sabores.
+    </p>
+
+    <Boton href="/" class="relative mt-2">Volver al inicio</Boton>
+  </main>
+</Layout>
