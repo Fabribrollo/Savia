@@ -23,22 +23,39 @@ const jugos = [
 
 ---
 
+{/* justify-start (no justify-center) y flex-1 (no h-full) en el div de
+    adentro: centrado dejaba mucho margen arriba antes de que asome el
+    título. Con justify-start el contenido arranca pegado al padding de
+    arriba, así se ve antes al entrar en pantalla. flex-1 sigue haciendo
+    falta para que el div ocupe el alto real de la sección: la sección
+    define el suyo con min-height, y los porcentajes de height solo miden
+    contra un height real del padre (mismo caso que Banner.astro). */}
 <section
   id="productos"
   data-hero
   class="relative isolate flex min-h-dvh flex-col overflow-hidden bg-lima"
 >
-  <div class="flex justify-center items-center w-full h-full flex-col m-8">
-    <h2 class="text-center text-6xl font-bold text-[#850E10] font-duper">
-      Tu momento. Tu sabor
+  <div class="flex flex-1 flex-col items-center justify-start w-full pt-4 mx-8 mb-8">
+    <h2 class="w-full whitespace-nowrap text-center text-6xl font-bold text-[#850E10] font-duper">
+      {/* Una sola línea (whitespace-nowrap: sin el salto que tenía "Tu
+          momento." / "Tu sabor" antes). Mismo mecanismo que el titular del
+          hero: la línea recortada por su máscara, así el texto entra
+          deslizándose desde abajo. */}
+      <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
+        <span class="block" data-linea-prod>Tu momento. Tu sabor</span>
+      </span>
     </h2>
-    <h5 class="text-center text-lg font-futura text-md text-[#520000] font-medium">
+    {/* mt-8 acá arriba, igual al mt-8 que ya traía la fila de tarjetas ahí
+        abajo: mismo espacio de los dos lados, así el subtítulo queda
+        centrado en el hueco entre el título y las tarjetas. */}
+    <h5 data-sub-prod class="mt-8 text-center text-lg font-futura text-md text-[#520000] font-medium">
       Tres sabores. Tres formas de disfrutar la frescura.
     </h5>
 
 <div class="flex flex-col md:flex-row justify-center items-center gap-8 mt-8 w-full">
   {jugos.map((jugo) => (
   <div
+    data-tarjeta-prod
     class="group card-jugo relative flex flex-col justify-center items-center gap-4 rounded-4xl p-4 min-w-[25%] overflow-hidden border border-white/35 bg-white/14 shadow-[inset_0_0_22px_rgba(0,0,0,0.13)] backdrop-blur-md backdrop-saturate-[1.2]"
     style={`color: #${jugo.color};`}
   >
@@ -76,3 +93,136 @@ const jugos = [
 
   </div>
 </section>
+
+<script>
+  import gsap from 'gsap';
+  import { SplitText } from 'gsap/SplitText';
+  import { CustomEase } from 'gsap/CustomEase';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(SplitText, CustomEase, ScrollTrigger);
+
+  // Misma curva que el resto de la página. Se vuelve a registrar acá (en vez
+  // de asumir que Home ya la creó) para que este script no dependa de que
+  // Home haya corrido antes en el documento.
+  const GOLPE = CustomEase.create('golpe', 'M0,0 C1,0 0.15,1 1,1');
+
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const seccion = document.querySelector<HTMLElement>('#productos');
+  // La tarjeta entera (vidrio, título, botella incluida), no solo la imagen:
+  // antes se veía la tarjeta ya armada y quieta con la botella apareciendo
+  // sola adentro.
+  const tarjetas = gsap.utils.toArray<HTMLElement>('[data-tarjeta-prod]');
+  const subtitulo = document.querySelector<HTMLElement>('[data-sub-prod]');
+
+  if (seccion && !sinMovimiento) {
+    const DUR = 1;
+    // Igual que en el hero: se resta de DUR, no se suma, para que el
+    // escalonado de letras cierre junto con todo lo demás.
+    const REPARTO = 0.2;
+    // El subtítulo arranca sobre el final del título (ver más abajo), no
+    // cuando termina del todo: eso lo hacía sentir desenganchado.
+    const DUR_SUB = 0.35;
+
+    // Cuánto suben las tarjetas al aparecer: bastante más que su propio alto,
+    // para que arranquen desde fuera de la sección y no a mitad de camino.
+    const SUBIDA_TARJETAS = () => Math.round(window.innerHeight * 0.4);
+
+    // Estado inicial sincrónico: sin esto se ve el título/tarjetas en su
+    // posición final durante el instante en que cargan las tipografías.
+    gsap.set('[data-linea-prod]', { yPercent: 115 });
+    gsap.set(tarjetas, { y: SUBIDA_TARJETAS, opacity: 0 });
+    if (subtitulo) gsap.set(subtitulo, { y: 40, opacity: 0 });
+
+    // El hero recién arma su propio pin (que agranda el documento en varios
+    // miles de px) cuando termina su entrada, hasta 4s después de cargar
+    // (ver el failsafe en Home.astro). Si "top 85%"/"top 30%" se miden antes
+    // de eso, quedan calculados contra un documento mucho más corto del que
+    // termina siendo, y el scrub queda mapeado a un tramo de scroll que no
+    // es el real (la animación arranca y cierra en cualquier punto, no
+    // cuando Productos entra en pantalla). Por eso no alcanza con crear el
+    // trigger y pedirle un refresh en el mismo instante: hay que esperar a
+    // que el pin del hero exista de verdad.
+    //
+    // Se chequea el alto real del pin-spacer y no una propiedad de GSAP
+    // (`scrollTrigger.pin`, `.end`): esa se pone en `true` en el mismo
+    // instante en que se crea el ScrollTrigger, antes incluso de que GSAP
+    // termine de medir cuánto scroll reservarle — con esa señal el chequeo
+    // pasaba igual de temprano que sin él. El spacer, en cambio, es DOM real:
+    // solo mide más que el hero cuando el scroll ya quedó reservado de verdad.
+    const hero = document.querySelector<HTMLElement>('#home');
+    const heroListo = () => {
+      const spacer = document.querySelector<HTMLElement>('.pin-spacer');
+      return !!(spacer && hero && spacer.offsetHeight > hero.offsetHeight * 1.5);
+    };
+
+    const armarEntrada = () => {
+      // SplitText necesita medir el texto ya con la fuente cargada.
+      document.fonts.ready.then(() => {
+        const cortes = gsap.utils
+          .toArray<HTMLElement>('[data-linea-prod]')
+          .map((linea) => new SplitText(linea, { type: 'chars' }));
+
+        // Mismo orden diagonal que el titular del hero.
+        const letras = cortes
+          .flatMap((corte) => corte.chars as HTMLElement[])
+          .sort((a, b) => {
+            const ra = a.getBoundingClientRect();
+            const rb = b.getBoundingClientRect();
+            return ra.left + ra.top - (rb.left + rb.top);
+          });
+
+        gsap.set(letras, { yPercent: 115, x: -22 });
+        gsap.set('[data-linea-prod]', { yPercent: 0 });
+
+        gsap
+          .timeline({
+            // Con scrub la "duration" deja de ser tiempo real y pasa a ser
+            // fracción del rango de scroll (start→end): mismo mecanismo que
+            // usan las transiciones del hero. GOLPE sigue siendo el default,
+            // ahora mapeando avance de scroll en vez de tiempo.
+            defaults: { ease: GOLPE, duration: DUR },
+            scrollTrigger: {
+              trigger: seccion,
+              // Arranca apenas la sección asoma. GOLPE es casi plano al
+              // principio, así que ese primer tramo del scroll se ve la
+              // sección ya armada, sin animación perceptible — recién sobre
+              // el final del recorrido pega el salto a la posición final.
+              start: 'top 90%',
+              end: 'top 20%',
+              scrub: 0.6,
+            },
+          })
+          .to(letras, { yPercent: 0, x: 0, duration: DUR - REPARTO, stagger: { amount: REPARTO } }, 0)
+          .to(tarjetas, { y: 0, opacity: 1, stagger: { amount: 0.15 } }, 0)
+          // Arranca en 0.75 (las letras terminan en DUR=1): entra mientras
+          // las últimas todavía están asentando, no después de una pausa.
+          // Mismo split de siempre: GOLPE para la posición, opacidad aparte
+          // y lineal para que se desvanezca (aparezca) antes de llegar.
+          .to(subtitulo, { y: 0, duration: DUR_SUB }, 0.75)
+          .fromTo(subtitulo, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'none' }, 0.75);
+      });
+    };
+
+    if (heroListo()) {
+      armarEntrada();
+    } else {
+      let listo = false;
+      const espera = setInterval(() => {
+        if (!heroListo()) return;
+        listo = true;
+        clearInterval(espera);
+        armarEntrada();
+      }, 100);
+      // Red de seguridad: si a los 5s el spacer todavía no creció (Home sin
+      // pin, error en su script, o simplemente tardó más de lo esperado), se
+      // arma igual contra lo que haya en ese momento. Es mejor una medida
+      // imperfecta que ninguna: sin este `else`, si `heroListo()` no se
+      // cumplía nunca, la sección quedaba sin animación para siempre.
+      setTimeout(() => {
+        clearInterval(espera);
+        if (!listo) armarEntrada();
+      }, 5000);
+    }
+  }
+</script>

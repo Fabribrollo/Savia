@@ -87,10 +87,10 @@ const arcoBeneficios = [
 
   <Nav />
 
+  <!-- pointer-events-none: la caja del titular cubre buena parte del hero y
+       atajaba el hover de las frutas del fondo aunque el texto sea
+       transparente. No es interactivo, así que no pierde nada. -->
   <h1
-    {/* pointer-events-none: la caja del titular cubre buena parte del hero y
-        atajaba el hover de las frutas del fondo aunque el texto sea
-        transparente. No es interactivo, así que no pierde nada. */}
     class="pointer-events-none relative z-10 px-4 pt-32 text-center font-duper font-bold uppercase leading-[0.82] tracking-[-0.015em] text-azul md:pt-36"
     style="font-size: clamp(2.75rem, 12.4vw, 11.5rem);"
   >
@@ -354,12 +354,46 @@ const arcoBeneficios = [
       montarScroll();
     };
 
+    // Referencia a la timeline de entrada, para poder completarla a mano
+    // desde la red de seguridad (ver más abajo). Se llena recién dentro de
+    // fonts.ready, así que puede no existir todavía cuando dispare el timeout.
+    let entrada: gsap.core.Timeline | undefined;
+
     // Red de seguridad. El scroll lo destraba el onComplete de la entrada, que
     // corre sobre el ticker de GSAP; y el ticker se duerme cuando la pestaña
     // está en segundo plano. Si la página carga sin foco, la entrada nunca
     // termina y el scroll queda trabado. La entrada dura 1.5s, así que a los
     // 4s ya se puede liberar sin riesgo de cortarla.
-    setTimeout(liberarScroll, 4000);
+    //
+    // OJO: acá NO se puede llamar a liberarScroll() directo si la timeline de
+    // entrada sigue viva. montarScroll() arma su propia timeline apuntando a
+    // los mismos elementos (nav, botella, cta) con tweens sueltos, y GSAP
+    // sobreescribe por overwrite cualquier tween previo sobre esas mismas
+    // propiedades apenas se crea el nuevo — mata la entrada a mitad de camino
+    // y esos elementos quedan congelados donde estaban (casi siempre todavía
+    // fuera de cuadro). Las letras del título no pisan nada en montarScroll(),
+    // por eso son las únicas que terminan de entrar bien: es la pista de este
+    // bug ("solo queda el título, navbar y botella desaparecen").
+    //
+    // La solución es saltar la entrada al final en vez de abandonarla: con
+    // progress(1) todos los tweens resuelven a su valor final al instante, y
+    // eso además dispara el propio onComplete (liberarScroll), así que no
+    // hace falta llamarlo a mano en ese caso.
+    setTimeout(() => {
+      if (scrollLiberado) return;
+      if (entrada) {
+        entrada.progress(1);
+      } else {
+        // Ni siquiera terminaron de cargar las fuentes: no hay timeline que
+        // completar. Se destraba igual, a mano, mostrando todo en su
+        // posición final.
+        gsap.set('[data-nav]', { y: 0 });
+        gsap.set('[data-linea]', { yPercent: 0 });
+        gsap.set('[data-botella]', { yPercent: 0 });
+        gsap.set('[data-cta]', { x: 0 });
+        liberarScroll();
+      }
+    }, 4000);
 
     // Estado inicial aplicado ya, sin esperar a las fuentes. Si esto se hiciera
     // recién dentro del fonts.ready, todo quedaría a la vista en su posición
@@ -397,7 +431,7 @@ const arcoBeneficios = [
 
       // Todos arrancan en 0 y cierran a la vez. expo.in deja el elemento casi
       // quieto y resuelve el recorrido sobre el final: ese es el golpe.
-      gsap
+      entrada = gsap
         .timeline({ defaults: { ease: GOLPE, duration: DUR }, onComplete: liberarScroll })
         .to('[data-nav]', { y: 0 }, 0)
         // Mismo ease y mismo cierre que el resto. `amount` reparte el total
@@ -575,20 +609,30 @@ const arcoBeneficios = [
     // desplazamiento completo se iría por arriba del cuadro.
     const subirLuz = () => -(hero.offsetHeight * (0.5 - FONDO_BOTELLA / 2));
 
+    // Altura de reposo del beneficio `i` sobre el arco: puro cálculo geométrico,
+    // sin leer nada que el propio GSAP ya haya escrito. Lo usan tanto la
+    // posición inicial (colocarArco) como el "to" de la entrada: si en cambio
+    // la entrada leyera la posición ya aplicada, se pisaría con su propio punto
+    // de partida y el beneficio dejaría de moverse (el mismo problema que ya
+    // dio la luz y el botón con `invalidateOnRefresh`).
+    const alturaArco = (i: number) => {
+      const { radio, cx, cy } = domo();
+      const x = REPARTO_X[i] * hero.offsetWidth;
+      const dx = x - cx;
+      // Altura del borde del aura en esa x, menos lo que se mete hacia
+      // adentro. Se ancla por el centro del círculo azul y no por el centro
+      // del item: los títulos ocupan distinta cantidad de renglones y centrar
+      // la caja entera dejaría los círculos desalineados respecto del arco.
+      const borde = cy + Math.sqrt(Math.max(0, radio * radio - dx * dx));
+      const disco = arcoItems[i].firstElementChild as HTMLElement;
+      return borde - RETRO_ICONO - disco.offsetHeight / 2;
+    };
+
     // Los beneficios se apoyan sobre el arco: proyección polar desde el centro
     // del domo. Se recalcula en cada refresh de ScrollTrigger (resize incluido).
     const colocarArco = () => {
-      const { radio, cx, cy } = domo();
       arcoItems.forEach((item, i) => {
-        const x = REPARTO_X[i] * hero.offsetWidth;
-        const dx = x - cx;
-        // Altura del borde del aura en esa x, menos lo que se meten hacia
-        // adentro. Se ancla por el centro del círculo azul y no por el centro
-        // del item: los títulos ocupan distinta cantidad de renglones y centrar
-        // la caja entera dejaría los círculos desalineados respecto del arco.
-        const borde = cy + Math.sqrt(Math.max(0, radio * radio - dx * dx));
-        const disco = item.firstElementChild as HTMLElement;
-        gsap.set(item, { x, y: borde - RETRO_ICONO - disco.offsetHeight / 2 });
+        gsap.set(item, { x: REPARTO_X[i] * hero.offsetWidth, y: alturaArco(i) });
       });
     };
     colocarArco();
@@ -724,9 +768,19 @@ const arcoBeneficios = [
       // offsetLeft y no getBoundingClientRect: no lo afecta el transform, así
       // que la distancia sale bien aunque se recalcule con el tween a medias.
       .to(cta, { x: () => window.innerWidth - cta!.offsetLeft + 40, duration: 0.5 }, 1.05)
-      // Los beneficios del arco quedan quietos: solo se encienden. La posición
-      // ya la fijó colocarArco().
-      .to(arcoItems, { opacity: 1, duration: 0.3, ease: 'none' }, 1.6);
+      // Los beneficios entran desde abajo con el mismo GOLPE del resto (ease
+      // por defecto de la timeline). Arrancan todos a la misma altura: justo
+      // por debajo del borde inferior del hero (que en esta etapa ocupa toda
+      // la pantalla), así entran literalmente desde fuera de cuadro sin
+      // importar en qué punto del arco termine cada uno. El "to" es la misma
+      // altura de reposo que ya fijó colocarArco().
+      .fromTo(
+        arcoItems,
+        { y: () => hero.offsetHeight + 60 },
+        { y: (i: number) => alturaArco(i), duration: 0.4 },
+        1.6
+      )
+      .to(arcoItems, { opacity: 1, duration: 0.4, ease: 'none' }, 1.6);
 
     disparadorHero = lineaHero.scrollTrigger;
   }
