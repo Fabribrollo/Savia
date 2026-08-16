@@ -1,0 +1,219 @@
+---
+import Resena from '../Resena.astro';
+
+
+const resenas = [
+  {
+    titulo: "La de Lima & Menta se volvió mi favorita.",
+    texto: "Es súper fresca y tiene ese equilibrio entre lo cítrico y la menta que hace que quieras seguir tomando.",
+    estrellas: 5,
+    nombre: "Martina G.",
+    ciudad: "Mar del Plata",
+    imagen: "../../public/images/image1.png", // relleno yo
+  },
+  {
+    titulo: "Por fin una bebida que no se siente pesada.",
+    texto: "Probé Frutos Rojos y me encantó. Tiene sabor, pero se siente liviana y fresca.",
+    estrellas: 5,
+    nombre: "Sofía R.",
+    ciudad: "Recoleta",
+    imagen: "../../public/images/image2.png", // relleno yo
+  },
+  {
+    titulo: "Naranja & Jengibre para arrancar el día.",
+    texto: "La llevo cuando salgo temprano o tengo un día largo. El toque de jengibre le da algo diferente.",
+    estrellas: 5,
+    nombre: "Tomás M.",
+    ciudad: "La Plata",
+    imagen: "../../public/images/image3.png", // relleno yo
+  },
+  {
+    titulo: "La probé por la botella y me quedé por el sabor.",
+    texto: "La vi en una cafetería, me llamó la atención el packaging y terminé probando Lima & Menta. Ahora siempre busco esa.",
+    estrellas: 5,
+    nombre: "Agustina P.",
+    ciudad: "Mar del Plata",
+    imagen: "../../public/images/image4.png", // relleno yo
+  },
+  {
+    titulo: "Perfecta para llevar a la playa.",
+    texto: "Bien fría es otra cosa. La de Frutos Rojos tiene un sabor increíble y la botella entra perfecto en el bolso.",
+    estrellas: 5,
+    nombre: "Valentina S.",
+    ciudad: "Pinamar",
+    imagen: "../../public/images/image5.png", // relleno yo
+  },
+  {
+    titulo: "Tres sabores y cada uno tiene su momento.",
+    texto: "Lima & Menta cuando quiero algo fresco, Frutos Rojos para una pausa y Naranja & Jengibre cuando necesito un poco más de energía.",
+    estrellas: 5,
+    nombre: "Nicolás D.",
+    ciudad: "Palermo",
+    imagen: "../../public/images/image6.png", // relleno yo
+  },
+
+];
+---
+
+<section class="relative min-h-dvh w-full overflow-hidden p-6 sm:p-8 sm:pt-16 md:p-12">
+  {/* Fondo decorativo. -z-10 lo manda detrás de todo lo demás en la sección
+      (que es `relative`, así que ese z-index apila local, no contra el resto
+      de la página). */}
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 -z-10 bg-[url('/icons/resenas.fondo.svg')]  bg-[#66AAD4] bg-cover bg-center bg-no-repeat"
+  >
+  </div>
+
+  {/* Botella en el hueco a la derecha del título. z-0: por debajo del título
+      y del carrusel (ambos con z-10), así el carrusel "tapa" el borde
+      inferior de la botella al superponerse. En mobile sobresale del borde
+      derecho (right negativo) — el overflow-hidden de la sección recorta el
+      resto, dejando ver solo una porción al lado del título, como se pidió. */}
+  <img
+    src="/images/amarillo-trim.png"
+    alt=""
+    aria-hidden="true"
+    class="pointer-events-none absolute right-[-14%] top-0 z-0 h-[34vh] w-auto -rotate-45 select-none sm:right-[-4%] sm:h-[65vh] lg:right-[2%] lg:top-0 lg:h-[124vh]"
+  />
+
+  {/* clamp() en vez de un rem fijo: mismo mecanismo que el titular del hero
+      en Home.astro. Así el título nunca excede el ancho de la pantalla, sin
+      necesitar un breakpoint por tamaño. max-w full en mobile (si no, con el
+      texto tan grande, un 45% angosto lo hace envolver en tantas líneas que
+      se sale igual). */}
+  <h2
+    class="relative z-10 max-w-full text-start font-duper font-bold leading-[0.85] text-[#CED500] lg:max-w-[45%]"
+    style="font-size: clamp(3rem, 16vw, 10rem);"
+  >
+    Cada sorbo impulsa el siguiente momento
+  </h2>
+
+  <div class="relative z-10 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+    <div class="shrink-0 max-w-[400px]">
+      <h3
+        class="font-duper font-bold leading-[0.9] text-[#850E10] mt-8"
+        style="font-size: clamp(2.5rem, 4vw, 4rem);"
+      >
+        Qué opina nuestra gente
+      </h3>
+      <h6 class="font-futura text-xl font-bold text-[#FFEDC2] mt-2">Basado en 63 reseñas</h6>
+    </div>
+
+    {/* w-full en mobile: el contenedor no se abre paso a los codazos contra
+        la columna de al lado, se acomoda al ancho disponible y son las
+        tarjetas de adentro las que se salen (a propósito: para eso está el
+        scroll/arrastre horizontal). min-w-[22rem] recién entra en sm+, donde
+        ya hay lugar de sobra al lado del título. cursor-grab lo pone el
+        script de abajo al agarrar. */}
+    <div class="carrusel-resenas flex min-h-[23rem] w-full min-w-0 cursor-grab gap-6 overflow-x-auto overflow-y-hidden p-8 active:cursor-grabbing sm:min-w-[22rem]">
+      {
+        resenas.map((resena) => (
+          <Resena
+            titulo={resena.titulo}
+            texto={resena.texto}
+            estrellas={resena.estrellas}
+            nombre={resena.nombre}
+            ciudad={resena.ciudad}
+            imagen={resena.imagen}
+          />
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Sin esto, la barra de scroll horizontal nativa reserva su propio alto
+     dentro de la caja (Windows: ~17px), y ese alto extra hace que
+     scrollHeight supere a clientHeight — es decir, el contenedor queda
+     "scrolleable" en vertical aunque overflow-y esté en hidden. Ocultar la
+     barra saca ese alto de la ecuación. */
+  .carrusel-resenas {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .carrusel-resenas::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mientras se arrastra: sin esto, mover el mouse con el botón apretado
+     selecciona el texto de las tarjetas en vez de scrollear. */
+  .carrusel-resenas.arrastrando {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+</style>
+
+<script>
+  // Arrastre horizontal con mouse: overflow-x-auto ya soporta touch/trackpad
+  // nativo, esto solo agrega el caso que falta (mouse en desktop). Sin
+  // librería: son 4 eventos de puntero.
+  const carrusel = document.querySelector<HTMLElement>('.carrusel-resenas');
+
+  // Cuánto frena por frame el momentum al soltar (más cerca de 1 = desliza más).
+  const FRICCION = 0.94;
+
+  if (carrusel) {
+    let arrastrando = false;
+    let inicioX = 0;
+    let scrollInicial = 0;
+
+    // Velocidad instantánea del scroll (px/ms), recalculada en cada
+    // pointermove a partir de cuánto se movió scrollLeft desde la última
+    // muestra. Es lo que alimenta el momentum al soltar.
+    let velocidad = 0;
+    let ultimoT = 0;
+    let ultimoScrollLeft = 0;
+    let momentumId = 0;
+
+    const frenarMomentum = () => cancelAnimationFrame(momentumId);
+
+    const iniciarMomentum = (vPorFrame: number) => {
+      const paso = () => {
+        if (Math.abs(vPorFrame) < 0.5) return;
+        carrusel.scrollLeft += vPorFrame;
+        vPorFrame *= FRICCION;
+        momentumId = requestAnimationFrame(paso);
+      };
+      momentumId = requestAnimationFrame(paso);
+    };
+
+    carrusel.addEventListener('pointerdown', (e) => {
+      frenarMomentum();
+      arrastrando = true;
+      inicioX = e.clientX;
+      scrollInicial = carrusel.scrollLeft;
+      ultimoT = performance.now();
+      ultimoScrollLeft = carrusel.scrollLeft;
+      velocidad = 0;
+      carrusel.classList.add('arrastrando');
+      carrusel.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    carrusel.addEventListener('pointermove', (e) => {
+      if (!arrastrando) return;
+      carrusel.scrollLeft = scrollInicial - (e.clientX - inicioX);
+
+      const ahora = performance.now();
+      const dt = ahora - ultimoT;
+      if (dt > 0) {
+        velocidad = (carrusel.scrollLeft - ultimoScrollLeft) / dt;
+        ultimoT = ahora;
+        ultimoScrollLeft = carrusel.scrollLeft;
+      }
+    });
+
+    const soltar = () => {
+      if (!arrastrando) return;
+      arrastrando = false;
+      carrusel.classList.remove('arrastrando');
+      // px/ms → px/frame (~16.7ms por frame a 60fps).
+      iniciarMomentum(velocidad * 16.7);
+    };
+    carrusel.addEventListener('pointerup', soltar);
+    carrusel.addEventListener('pointercancel', soltar);
+  }
+</script>
+

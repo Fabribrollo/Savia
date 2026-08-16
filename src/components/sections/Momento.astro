@@ -1,0 +1,152 @@
+---
+import Desplegable from '../Desplegable.astro';
+
+const Desplegables = [
+  { fondo: 'slider1.png', titulo: 'Para los días de playa' },
+  { fondo: 'slider2.png', titulo: 'Para el camino' },
+  { fondo: 'slider3.png', titulo: 'Para una pausa' },
+  { fondo: 'slider4.png', titulo: 'Para compartir' },
+  { fondo: 'slider5.png', titulo: 'Para seguir' },
+];
+
+// Mismos valores que ANCHO_CERRADO/GAP en el <script> de más abajo: el ancho
+// que ocupa la fila cuando NINGÚN desplegable está abierto. El texto de
+// abajo se ancla a este valor fijo (no al ancho de la fila-contenedor, que es
+// más grande) para que quede pegado al final de la fila cerrada y no se
+// mueva cuando alguno se abre y la fila se recentra distinto.
+const ANCHO_CERRADO = 190;
+const GAP = 28;
+const ANCHO_TOTAL_CERRADO = ANCHO_CERRADO * Desplegables.length + GAP * (Desplegables.length - 1);
+---
+
+<section
+  id="momento"
+  class="relative isolate flex min-h-dvh flex-col items-center justify-center gap-10 overflow-hidden bg-[#66AAD4] py-16"
+>
+  {/* position:relative + alto fijo: los 5 desplegables van position:absolute
+      adentro (ver Desplegable.astro), y es el script de acá abajo el que les
+      calcula "left" y "width" en px. Con eso los cerrados nunca cambian de
+      tamaño al abrirse uno — solo se corren de lugar. */}
+  <div data-desplegables class="relative mx-auto h-[68vh] w-full max-w-[1360px] px-4">
+    {
+      Desplegables.map((desplegable) => (
+        <Desplegable imagen={desplegable.fondo} titulo={desplegable.titulo} />
+      ))
+    }
+  </div>
+
+  {/* Ancho fijo = la fila con los 5 cerrados (ANCHO_TOTAL_CERRADO), no el
+      contenedor completo (que es más ancho y deja margen a los costados
+      cuando nada está abierto). Centrado igual que la fila de arriba, así
+      los bordes derechos coinciden en el estado cerrado — y como el ancho es
+      un número fijo y no depende de qué esté abierto, no se corre cuando se
+      abre un desplegable. Sin position: así, al no estar posicionado, queda
+      por detrás de los desplegables (que sí lo están) en el stacking normal
+      del navegador — es lo que hace que "salga de atrás" al entrar. */}
+  <p
+    data-texto-momento
+    class="mx-auto text-right font-duper text-3xl text-[#FFEDC2] font-bold"
+    style={`width: ${ANCHO_TOTAL_CERRADO}px;`}
+  >
+    Naturalmente, en cada momento
+  </p>
+</section>
+
+<script>
+  import { gsap, GOLPE, esperarHero } from '../../scripts/entrada';
+
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const seccion = document.querySelector<HTMLElement>('#momento');
+  // DOM order == orden visual izquierda a derecha, exactamente el que se pidió.
+  const tarjetas = gsap.utils.toArray<HTMLElement>('[data-desplegable]');
+  const texto = document.querySelector<HTMLElement>('[data-texto-momento]');
+
+  if (seccion && !sinMovimiento) {
+    const DUR = 1;
+
+    // Cuánto suben las tarjetas al aparecer: bastante más que su propio alto,
+    // para que arranquen desde fuera de la sección (mismo criterio que en
+    // Productos/Favorita). Anima `y` (transform), no toca `left`/`width` —
+    // esas las sigue manejando el otro script de este archivo.
+    const SUBIDA_TARJETAS = () => Math.round(window.innerHeight * 0.35);
+
+    gsap.set(tarjetas, { y: SUBIDA_TARJETAS, opacity: 0 });
+    if (texto) gsap.set(texto, { y: -140, opacity: 0 });
+
+    esperarHero(() => {
+      // Se vuelve a fijar el estado oculto acá: el gsap.set() de arriba corre
+      // apenas carga el módulo, y en ese instante innerHeight puede no estar
+      // listo todavía (da 0 y SUBIDA_TARJETAS también). Repetirlo cuando el
+      // hero ya está listo (bastante más tarde) asegura el valor correcto —
+      // no se nota ningún salto porque el opacity:0 ya lo tapaba desde antes.
+      gsap.set(tarjetas, { y: SUBIDA_TARJETAS, opacity: 0 });
+      if (texto) gsap.set(texto, { y: -140, opacity: 0 });
+
+      gsap.timeline({
+        defaults: { ease: GOLPE, duration: DUR },
+        scrollTrigger: {
+          trigger: seccion,
+          start: 'top 90%',
+          end: 'top 20%',
+          scrub: 0.6,
+        },
+      })
+        // Una por una, izquierda a derecha: el orden natural del array ya es
+        // ese, así que alcanza con un stagger simple (sin reordenar nada,
+        // a diferencia de las botellas de Favorita).
+        .to(tarjetas, { y: 0, opacity: 1, stagger: { amount: 0.5 } }, 0)
+        // El texto arranca un poco después (0.25): así ya se ve el primer
+        // tramo de tarjetas subiendo antes de que él empiece a asomar por
+        // detrás, en vez de que los dos lleguen juntos.
+        .to(texto, { y: 0, duration: DUR - 0.25 }, 0.25)
+        .fromTo(texto, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 0.25);
+    });
+  }
+</script>
+
+<script>
+  const contenedor = document.querySelector<HTMLElement>('[data-desplegables]');
+  const botones = contenedor
+    ? Array.from(contenedor.querySelectorAll<HTMLElement>('[data-desplegable]'))
+    : [];
+
+  // Anchos fijos en px, no proporciones: los cerrados nunca achican, solo se
+  // corren de lugar (left) para hacerle espacio al que se abre. El que se
+  // abre es el único que cambia de ancho.
+  const ANCHO_CERRADO = 190;
+  const ANCHO_ABIERTO = 440;
+  const GAP = 28;
+
+  // Recalcula left/width de los 5 según cuál (si hay alguno) está abierto, y
+  // centra todo el conjunto dentro del contenedor. Se llama al cargar y en
+  // cada click — nunca hay que tocar más de un lugar para estos cálculos.
+  const recalcular = () => {
+    if (!contenedor) return;
+    const indiceAbierto = botones.findIndex((b) => b.hasAttribute('data-abierto'));
+    const anchos = botones.map((_, i) => (i === indiceAbierto ? ANCHO_ABIERTO : ANCHO_CERRADO));
+    const anchoTotal = anchos.reduce((suma, ancho) => suma + ancho, 0) + GAP * (botones.length - 1);
+
+    let x = (contenedor.clientWidth - anchoTotal) / 2;
+    botones.forEach((boton, i) => {
+      boton.style.width = `${anchos[i]}px`;
+      boton.style.left = `${x}px`;
+      x += anchos[i] + GAP;
+    });
+  };
+
+  recalcular();
+  window.addEventListener('resize', recalcular);
+
+  // Nunca más de uno abierto: cada click cierra todos y, si el que se
+  // clickeó no era el que ya estaba abierto, lo abre. Clickear el que ya
+  // está abierto lo deja cerrado (todos quedan en `removeAttribute`, sin
+  // volver a marcar ninguno).
+  botones.forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const yaAbierto = boton.hasAttribute('data-abierto');
+      botones.forEach((b) => b.removeAttribute('data-abierto'));
+      if (!yaAbierto) boton.setAttribute('data-abierto', '');
+      recalcular();
+    });
+  });
+</script>

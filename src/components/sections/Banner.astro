@@ -9,19 +9,33 @@ import Boton from "../Boton.astro";
   data-hero
   class="relative isolate flex min-h-dvh h-full flex-col overflow-hidden"
 >
+{/* El fondo va en su propia capa, separado del contenido: así se puede
+    animar (scale + opacity) sin que ese transform le pise el texto/botón,
+    que están en un div aparte encima. */}
+<div
+  data-fondo-banner
+  aria-hidden="true"
+  class="absolute inset-0 -z-10 bg-[url('/images/banner.jpg')] bg-cover bg-center"
+></div>
+
 {/* flex-1 y no h-full: la <section> define su alto con `min-height`, y los
     porcentajes de `height` solo miden contra un `height` real del padre. Al no
     encontrarlo, `h-full` se resolvía a `auto` y el div quedaba del alto del
     texto. Como la section es flex-col, `flex-1` sí lo estira hasta el fondo. */}
-<div class="flex flex-1  w-full flex-col bg-[url('/images/banner.jpg')] bg-cover bg-center">
+<div class="flex flex-1 w-full flex-col">
 
 <div class="my-25 mx-10">
 
 
   <h2 class="text-start text-7xl font-bold text-[#CED500] font-duper max-w-[500px]">
-    Cada día tiene un movimiento
+    {/* Mismo mecanismo que el titular del hero: la línea recortada por su
+        propia máscara, el texto entra deslizándose desde abajo letra por
+        letra (ver el script al final del archivo). */}
+    <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
+      <span class="block" data-linea-banner>Cada día tiene un movimiento</span>
+    </span>
   </h2>
-  <h5 class="test-start text-xl font-futura text-lg text-[#FFEDC2] my-4 font-medium">
+  <h5 data-sub-banner class="text-start text-2xl font-futura text-[#FFEDC2] my-4 font-medium">
     Cada movimiento tiene una Savia.
   </h5>
 
@@ -32,8 +46,9 @@ import Boton from "../Boton.astro";
     href="#momento"
     fondo="bg-aura"
     texto="text-[#FFF8E7]"
-    tamano="px-7 py-2 text-xl"
+    tamano="px-10 py-2 text-2xl"
     flecha={false}
+    data-cta-banner
     class="relative self-start"
   >
     Encontrá tu momento
@@ -42,10 +57,63 @@ import Boton from "../Boton.astro";
 </div>
 </div>
 
-{/* El separador se movió a Favorita.astro: ahora vive en su borde superior y
-    hace de "agua" que sube con ella sobre este banner. Ver el pin de
-    ScrollTrigger en Favorita.astro (pinSpacing:false), que es lo que hace que
-    banner quede fijo mientras favorita lo tapa al scrollear. */}
-
+{/* Separador al pie de la sección, por encima del fondo (z-10 contra el
+    -z-10 de data-fondo-banner). w-full: todo el ancho. */}
+<img
+  src="/icons/separador.svg"
+  alt=""
+  aria-hidden="true"
+  class="pointer-events-none absolute inset-x-0 bottom-0 z-10 block w-full"
+/>
 
 </section>
+
+<script>
+  import { gsap, GOLPE, esperarHero, letrasDiagonal } from '../../scripts/entrada';
+
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const seccion = document.querySelector<HTMLElement>('#banner');
+  const subtitulo = document.querySelector<HTMLElement>('[data-sub-banner]');
+  const cta = document.querySelector<HTMLElement>('[data-cta-banner]');
+  const fondo = document.querySelector<HTMLElement>('[data-fondo-banner]');
+
+  if (seccion && !sinMovimiento) {
+    const DUR = 1;
+    const REPARTO = 0.2;
+
+    // Cuánto tienen que correrse para arrancar afuera de cuadro, medido desde
+    // su posición real: así quedan justo fuera sin importar el viewport.
+    const fueraIzquierda = (el: HTMLElement) => -(el.getBoundingClientRect().right + 60);
+
+    gsap.set('[data-linea-banner]', { yPercent: 115 });
+    if (subtitulo) gsap.set(subtitulo, { x: fueraIzquierda(subtitulo), opacity: 0 });
+    if (cta) gsap.set(cta, { x: fueraIzquierda(cta), opacity: 0 });
+    // El fondo arranca un poco más grande y transparente, y se asienta a su
+    // tamaño real con opacidad plena — mismo recurso que un "Ken Burns"
+    // liviano, entra con GOLPE como todo lo demás de esta sección.
+    if (fondo) gsap.set(fondo, { scale: 1.12, opacity: 0 });
+
+    esperarHero(() => {
+      document.fonts.ready.then(() => {
+        const letras = letrasDiagonal('[data-linea-banner]');
+
+        gsap.timeline({
+          defaults: { ease: GOLPE, duration: DUR },
+          scrollTrigger: {
+            trigger: seccion,
+            start: 'top 90%',
+            end: 'top 20%',
+            scrub: 0.6,
+          },
+        })
+          .to(letras, { yPercent: 0, x: 0, duration: DUR - REPARTO, stagger: { amount: REPARTO } }, 0)
+          .to(subtitulo, { x: 0, duration: DUR }, 0)
+          .fromTo(subtitulo, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 0)
+          .to(cta, { x: 0, duration: DUR }, 0.08)
+          .fromTo(cta, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 0.08)
+          .to(fondo, { scale: 1, duration: DUR }, 0)
+          .fromTo(fondo, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'none' }, 0);
+      });
+    });
+  }
+</script>

@@ -1,4 +1,6 @@
 ---
+import Aura from '../Aura.astro';
+
 // Las tres botellas comparten recorte (854×2287 exactos), así que a igual
 // alto quedan a la misma escala y alineadas sin compensar nada.
 //
@@ -15,17 +17,42 @@ const botellas = [
     // hacia atrás. Sin desplazamiento vertical, así las tres bases coinciden
     // (de eso se encarga el `items-end` del contenedor).
     clase: 'z-10 h-[64vh] -mr-11',
+    // Orden de entrada al hacer scroll (no el visual, que es naranja-roja-
+    // amarilla de izquierda a derecha): naranja, amarilla, roja.
+    orden: 1,
   },
   {
     nombre: 'Frutos Rojos',
     imagen: '/images/rojo-trim.png',
     clase: 'z-20 h-[70vh]',
+    orden: 3,
   },
   {
     nombre: 'Lima & Menta',
     imagen: '/images/amarillo-trim.png',
     clase: 'z-10 h-[64vh] -ml-11',
+    orden: 2,
   },
+];
+
+// Las botellas ocupan de ~30% a ~70% de ancho: el grupo "pegado" usa esos
+// bordes como referencia para quedar rozándolas.
+const frutas = [
+  { tipo: 'sandia', pos: 'left-[4%] top-[44%]', tam: '9vw', giro: -18 }, // sandía izquierda medio, mediano
+  { tipo: 'frutilla', pos: 'left-[8%] top-[9%]', tam: '8vw', giro: 14 }, // frutilla arriba izquierda, mediano
+  // --- rodean la botella, sin tocarla ---
+  { tipo: 'jengibre', pos: 'left-[30%] top-[50%]', tam: '7vw', giro: -10 }, // jengibre izquierda medio, al lado de las botellas
+  { tipo: 'sandia', pos: 'left-[30%] top-[70%]', tam: '8vw', giro: 22 }, // sandía extremo bajo izquierdo
+  { tipo: 'sandia', pos: 'right-[30%] top-[70%]', tam: '8vw', giro: -16 }, // sandía extremo bajo derecho
+  { tipo: 'hojaMenta', pos: 'right-[30%] top-[50%]', tam: '7vw', giro: 12 }, // hoja de menta derecha medio, al lado de las botellas
+  // Arriba de la tapa (top-[21%] es donde empieza la botella más alta), no
+  // encima de ella.
+  { tipo: 'frutilla', pos: 'left-[40%] top-[11%]', tam: '6vw', giro: -9 }, // frutilla entre las botellas y el título
+  { tipo: 'arandano', pos: 'right-[40%] top-[13%]', tam: '4.5vw', giro: 16 }, // arándano entre las botellas y el título
+  // --- fin del grupo pegado ---
+  { tipo: 'arandano', pos: 'right-[6%] top-[8%]', tam: '5vw', giro: -12 }, // arándano arriba derecha
+  { tipo: 'hojaMenta', pos: 'right-[6%] top-[68%]', tam: '7vw', giro: 19 }, // hoja de menta derecha medio (segunda)
+  { tipo: 'jengibre', pos: 'right-[10%] top-[30%]', tam: '7vw', giro: -14 }, // jengibre abajo derecha
 ];
 ---
 
@@ -33,18 +60,46 @@ const botellas = [
   id="favorita"
   class="relative isolate flex min-h-dvh flex-col items-center justify-center gap-10 overflow-hidden bg-[#66AAD4]"
 >
-  <h2 class="text-center font-duper text-6xl font-bold text-[#850E10]">
-    Encontrá tu favorita
+  {/* Frutas del fondo, mismo tratamiento que Home.astro: z-0 y primeras en
+      el DOM, quedan detrás del título y de las botellas. */}
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-10">
+    {
+      frutas.map(({ tipo, pos, tam, giro }) => (
+        <span
+          class:list={['fruta absolute block', pos]}
+          style={`width:${tam};aspect-ratio:1;rotate:${giro}deg;--fruta:url(/icons/${tipo}.svg);`}
+        />
+      ))
+    }
+  </div>
+
+  <h2 class="relative z-10 text-center font-duper text-6xl font-bold text-[#850E10]">
+    {/* Mismo mecanismo que el titular del hero: la línea recortada por su
+        propia máscara, el texto entra letra por letra (ver el script). */}
+    <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
+      <span class="block" data-linea-favorita>Encontrá tu favorita</span>
+    </span>
   </h2>
+
+  {/* Aura detrás de la botella central: nucleo bajo = 80% del radio en
+      degradado (poco color sólido, mucho desenfoque). z-[5]: por encima de
+      las frutas (z-0), debajo de las botellas (z-10/z-20). */}
+  <div class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center">
+    <div class="relative aspect-square w-[100vw] max-w-[800px]">
+      <Aura size="100%" color="#0071B8" nucleo="60%" fin="100%" intensidad={1} />
+    </div>
+  </div>
 
   <div class="flex items-end justify-center">
     {
-      botellas.map(({ nombre, imagen, clase }) => (
+      botellas.map(({ nombre, imagen, clase, orden }) => (
         <img
           src={imagen}
           alt={`Botella de jugo Savia sabor ${nombre}`}
           width="854"
           height="2287"
+          data-botella-favorita
+          data-orden={orden}
           class:list={[
             'w-auto object-contain drop-shadow-[0_30px_50px_rgba(90,100,20,0.28)]',
             clase,
@@ -54,3 +109,67 @@ const botellas = [
     }
   </div>
 </section>
+
+<style>
+  /* Mismo mecanismo que .fruta en Home.astro: el SVG de máscara aporta la
+     silueta, el color sale del background-color (no del archivo). */
+  .fruta {
+    background-color: #cce3f1;
+    -webkit-mask-image: var(--fruta);
+    mask-image: var(--fruta);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+</style>
+
+<script>
+  import { gsap, GOLPE, esperarHero, letrasDiagonal } from '../../scripts/entrada';
+
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const seccion = document.querySelector<HTMLElement>('#favorita');
+
+  // Orden de ENTRADA (naranja, amarilla, roja), no el orden del DOM (que es
+  // el orden visual naranja-roja-amarilla). data-orden lo puso el frontmatter;
+  // acá solo se ordena el array de targets antes de pasárselo al stagger, así
+  // GSAP los anima en la secuencia pedida sin tocar el layout.
+  const botellas = gsap.utils
+    .toArray<HTMLElement>('[data-botella-favorita]')
+    .sort((a, b) => Number(a.dataset.orden) - Number(b.dataset.orden));
+
+  if (seccion && !sinMovimiento) {
+    const DUR = 1;
+    const REPARTO = 0.2;
+
+    // Bastante más que su propio alto, para que arranquen desde fuera de la
+    // sección y no a mitad de camino (mismo criterio que en Productos).
+    const SUBIDA_BOTELLAS = () => Math.round(window.innerHeight * 0.4);
+
+    gsap.set('[data-linea-favorita]', { yPercent: 115 });
+    gsap.set(botellas, { y: SUBIDA_BOTELLAS, opacity: 0 });
+
+    esperarHero(() => {
+      document.fonts.ready.then(() => {
+        const letras = letrasDiagonal('[data-linea-favorita]');
+
+        gsap.timeline({
+          defaults: { ease: GOLPE, duration: DUR },
+          scrollTrigger: {
+            trigger: seccion,
+            start: 'top 90%',
+            end: 'top 20%',
+            scrub: 0.6,
+          },
+        })
+          .to(letras, { yPercent: 0, x: 0, duration: DUR - REPARTO, stagger: { amount: REPARTO } }, 0)
+          // "Debe verse fluido": stagger amplio (0.35 de los DUR=1 totales)
+          // para que la segunda y la tercera botella arranquen bien
+          // solapadas con la anterior en vez de esperar a que termine.
+          .to(botellas, { y: 0, opacity: 1, stagger: { amount: 0.35, ease: 'none' } }, 0.15);
+      });
+    });
+  }
+</script>

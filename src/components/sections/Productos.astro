@@ -48,7 +48,7 @@ const jugos = [
     {/* mt-8 acá arriba, igual al mt-8 que ya traía la fila de tarjetas ahí
         abajo: mismo espacio de los dos lados, así el subtítulo queda
         centrado en el hueco entre el título y las tarjetas. */}
-    <h5 data-sub-prod class="mt-8 text-center text-lg font-futura text-md text-[#520000] font-medium">
+    <h5 data-sub-prod class="mb-4 text-center text-lg font-futura text-md text-[#520000] font-medium justify-center ">
       Tres sabores. Tres formas de disfrutar la frescura.
     </h5>
 
@@ -199,7 +199,6 @@ const jugos = [
           // las últimas todavía están asentando, no después de una pausa.
           // Mismo split de siempre: GOLPE para la posición, opacidad aparte
           // y lineal para que se desvanezca (aparezca) antes de llegar.
-          .to(subtitulo, { y: 0, duration: DUR_SUB }, 0.75)
           .fromTo(subtitulo, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'none' }, 0.75);
       });
     };

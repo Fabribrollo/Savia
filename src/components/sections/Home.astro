@@ -130,12 +130,13 @@ const arcoBeneficios = [
         tercera sección hay que bajar más el centro del domo, y GSAP no puede
         animar la propiedad `translate` que genera la utilidad. */}
     <div data-halo class="relative aspect-square w-[49vw] max-w-[720px]">
-      {/* 2º: CED500. Pleno hasta el 82% del radio (210/255). */}
+      {/* 2º: CED500. Pleno hasta el 88% del radio: degradado más corto (12%
+          del radio en vez de 20%) para que el borde se vea más marcado. */}
       <Aura
         size="min(43vw, 628px)"
         offsetY="0%"
         intensidad={1}
-        nucleo="80%"
+        nucleo="88%"
         fin="100%"
       />
 
@@ -494,6 +495,7 @@ const arcoBeneficios = [
   const auraInterna = document.querySelector<HTMLElement>('[data-aura="interna"]');
   const titular = document.querySelector<HTMLElement>('h1');
   const navBarra = document.querySelector<HTMLElement>('[data-nav]');
+  const frutas = document.querySelector<HTMLElement>('[data-frutas]');
   const tarjetas = gsap.utils.toArray<HTMLElement>('[data-card]');
   const halo = document.querySelector<HTMLElement>('[data-halo]');
   const arcoItems = gsap.utils.toArray<HTMLElement>('[data-arco-item]');
@@ -689,6 +691,10 @@ const arcoBeneficios = [
       )
       .to(navBarra, { y: () => -(navBarra!.getBoundingClientRect().height + 60), opacity: 0, duration: 0.45 }, 0)
       .to(titular, { yPercent: -140, opacity: 0, duration: 0.5 }, 0)
+      // Las frutas son fondo de la primera sección nada más: a partir de acá
+      // la segunda sección ya tiene su propio fondo (el aura CED500 llenando
+      // todo), y se verían pisando ese color.
+      .to(frutas, { opacity: 0, duration: 0.4, ease: 'none' }, 0)
       .to(botella, { yPercent: centrarBotella, scale: escalaBotella, duration: 1 }, 0)
       // En la segunda sección la botella va derecha.
       .to(botellaImg, { rotation: 0, duration: 1 }, 0)
