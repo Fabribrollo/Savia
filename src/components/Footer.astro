@@ -1,0 +1,91 @@
+---
+// Enlaces del bloque de contacto. El primer ítem no es un enlace (es el
+// encabezado de la lista), por eso `href` es opcional.
+const contacto = [
+  { texto: 'Contactanos al:' },
+  { texto: '+54 223 567-8834', href: 'tel:+542235678834' },
+  { texto: 'savia.ar@gmail.com', href: 'mailto:savia.ar@gmail.com', antes: 'Escribinos a ' },
+  { texto: 'Contacto', href: '#contacto' },
+  { texto: 'Botón de Arrepentimiento', href: '#arrepentimiento' },
+];
+
+const legales = [
+  { texto: 'Términos y condiciones', href: '#terminos' },
+  { texto: 'Aviso de privacidad', href: '#privacidad' },
+];
+---
+
+<footer class="relative isolate bg-[#66AAD4] px-6">
+  {/* Fondo decorativo. -z-10 lo manda detrás de todo lo demás en la sección
+      (que es `relative`, así que ese z-index apila local, no contra el resto
+      de la página). */}
+
+  <div aria-hidden="true" class="absolute inset-0 -z-10">
+    <div class="absolute inset-x-0 bottom-0 top-[3vw] bg-[#000038]"></div>
+    <img src="/icons/footer.svg" alt="" class="absolute inset-x-0 top-0 w-full select-none" />
+  </div>
+
+  {/* pt en vw: el contenido tiene que empezar por debajo de la curva, que
+      escala con el ancho de la pantalla. */}
+  <div class="mx-auto flex max-w-[1440px] flex-col gap-14 pb-10 pt-[9vw] md:px-16 lg:px-28 lg:pt-[7vw]">
+    {/* Las dos filas comparten el mismo primer tramo (42%) para que el logo y
+        el "© Savia" queden alineados a la izquierda, y la lista de contacto
+        con "Términos y condiciones" en la misma columna. */}
+    <div class="grid gap-10 md:grid-cols-[42%_1fr]">
+      {/* El logo va como máscara y no como <img>: el archivo es monocromo
+          (#0071B8) y así el color lo pone el CSS, igual que .fruta en
+          Home/Favorita y .estrella en Resena. aspect-[120/23] es la relación
+          del viewBox del SVG — con el alto fijo, el ancho sale solo. */}
+      <span
+        role="img"
+        aria-label="Savia"
+        class="logo-savia block aspect-[120/23] h-9 self-start"
+      ></span>
+
+      <ul class="list-disc space-y-1.5 pl-5 font-futura text-md font-medium text-crema marker:text-crema">
+        {
+          contacto.map(({ texto, href, antes }) => (
+            <li>
+              {antes}
+              {href ? (
+                <a href={href} class="underline underline-offset-2 transition-opacity hover:opacity-70">
+                  {texto}
+                </a>
+              ) : (
+                texto
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="grid gap-4 font-futura text-md font-medium text-crema md:grid-cols-[42%_auto_auto] ">
+      <p>© Savia. Todos los derechos reservados.</p>
+      {
+        legales.map(({ texto, href }) => (
+          <a href={href} class="whitespace-nowrap transition-opacity hover:opacity-70">
+            {texto}
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* Mismo mecanismo que .fruta en Home.astro y .estrella en Resena.astro: el
+     SVG aporta la silueta y el color sale del background-color, no del
+     archivo. */
+  .logo-savia {
+    background-color: #ffedc2;
+    -webkit-mask-image: url('/icons/logo.svg');
+    mask-image: url('/icons/logo.svg');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+</style>

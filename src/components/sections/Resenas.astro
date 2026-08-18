@@ -9,7 +9,7 @@ const resenas = [
     estrellas: 5,
     nombre: "Martina G.",
     ciudad: "Mar del Plata",
-    imagen: "../../public/images/image1.png", // relleno yo
+    imagen: "/images/image1.webp", // relleno yo
   },
   {
     titulo: "Por fin una bebida que no se siente pesada.",
@@ -17,7 +17,7 @@ const resenas = [
     estrellas: 5,
     nombre: "Sofía R.",
     ciudad: "Recoleta",
-    imagen: "../../public/images/image2.png", // relleno yo
+    imagen: "/images/image2.webp", // relleno yo
   },
   {
     titulo: "Naranja & Jengibre para arrancar el día.",
@@ -25,7 +25,7 @@ const resenas = [
     estrellas: 5,
     nombre: "Tomás M.",
     ciudad: "La Plata",
-    imagen: "../../public/images/image3.png", // relleno yo
+    imagen: "/images/image3.webp", // relleno yo
   },
   {
     titulo: "La probé por la botella y me quedé por el sabor.",
@@ -33,7 +33,7 @@ const resenas = [
     estrellas: 5,
     nombre: "Agustina P.",
     ciudad: "Mar del Plata",
-    imagen: "../../public/images/image4.png", // relleno yo
+    imagen: "/images/image4.webp", // relleno yo
   },
   {
     titulo: "Perfecta para llevar a la playa.",
@@ -41,7 +41,7 @@ const resenas = [
     estrellas: 5,
     nombre: "Valentina S.",
     ciudad: "Pinamar",
-    imagen: "../../public/images/image5.png", // relleno yo
+    imagen: "/images/image5.webp", // relleno yo
   },
   {
     titulo: "Tres sabores y cada uno tiene su momento.",
@@ -49,7 +49,7 @@ const resenas = [
     estrellas: 5,
     nombre: "Nicolás D.",
     ciudad: "Palermo",
-    imagen: "../../public/images/image6.png", // relleno yo
+    imagen: "/images/image6.webp", // relleno yo
   },
 
 ];
@@ -71,10 +71,10 @@ const resenas = [
       derecho (right negativo) — el overflow-hidden de la sección recorta el
       resto, dejando ver solo una porción al lado del título, como se pidió. */}
   <img
-    src="/images/amarillo-trim.png"
+    src="/images/amarillo-trim.webp"
     alt=""
     aria-hidden="true"
-    class="pointer-events-none absolute right-[-14%] top-0 z-0 h-[34vh] w-auto -rotate-45 select-none sm:right-[-4%] sm:h-[65vh] lg:right-[2%] lg:top-0 lg:h-[124vh]"
+    class="pointer-events-none absolute right-[-6%] top-0 z-0 h-[28vh] w-auto -rotate-[28deg] select-none sm:right-[3%] sm:h-[52vh] lg:right-[13%] lg:top-0 lg:h-[100vh]"
   />
 
   {/* clamp() en vez de un rem fijo: mismo mecanismo que el titular del hero
@@ -106,7 +106,7 @@ const resenas = [
         scroll/arrastre horizontal). min-w-[22rem] recién entra en sm+, donde
         ya hay lugar de sobra al lado del título. cursor-grab lo pone el
         script de abajo al agarrar. */}
-    <div class="carrusel-resenas flex min-h-[23rem] w-full min-w-0 cursor-grab gap-6 overflow-x-auto overflow-y-hidden p-8 active:cursor-grabbing sm:min-w-[22rem]">
+    <div class="carrusel-resenas flex min-h-[19rem] w-full min-w-0 cursor-grab gap-4 overflow-x-auto overflow-y-hidden p-4 active:cursor-grabbing sm:min-h-[23rem] sm:min-w-[22rem] sm:gap-6 sm:p-8">
       {
         resenas.map((resena) => (
           <Resena

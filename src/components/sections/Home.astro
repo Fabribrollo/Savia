@@ -90,9 +90,13 @@ const arcoBeneficios = [
   <!-- pointer-events-none: la caja del titular cubre buena parte del hero y
        atajaba el hover de las frutas del fondo aunque el texto sea
        transparente. No es interactivo, así que no pierde nada. -->
+  {/* El término preferido del clamp va como `vw + rem` y no como vw solo: con
+      un vw puro la misma pendiente tiene que servir para mobile y para
+      desktop, y no da — en mobile quedaba en 46px. El sumando fijo levanta el
+      piso sin tocar el tamaño de desktop (a 1280px da los mismos ~158px). */}
   <h1
     class="pointer-events-none relative z-10 px-4 pt-32 text-center font-duper font-bold uppercase leading-[0.82] tracking-[-0.015em] text-azul md:pt-36"
-    style="font-size: clamp(2.75rem, 12.4vw, 11.5rem);"
+    style="font-size: clamp(3.5rem, 10vw + 1.9rem, 11.5rem);"
   >
     {/* Cada renglón va dentro de una máscara con overflow-hidden: el texto
         entra deslizándose desde abajo y aparece recortado por su propia línea.
@@ -171,13 +175,21 @@ const arcoBeneficios = [
       <div data-botella class="relative will-change-transform">
         <!-- rojo-trim.png: el original tiene ~69% de ancho en transparencia,
              lo que hacía imposible dimensionarla con vw. -->
+        <!-- El tamaño final de la botella lo fija la etapa 2: 0.86 del alto del
+             hero. Con el ancho en vw puro, en mobile 22vw daba 82px, caía al
+             piso de min-w (165px) y la etapa 2 tenía que escalarla 1.58 — por
+             eso en la primera sección se veía diminuta y en la segunda no.
+             32vh es ese mismo tamaño final expresado como ancho
+             (0.86 × alto × 854/2287 de proporción ≈ 0.32 × alto), así que la
+             botella ya nace del tamaño correcto y la escala queda en ~1. El
+             max() conserva el comportamiento de desktop, donde manda 22vw. -->
         <img
-          src="/images/rojo-trim.png"
+          src="/images/rojo-trim.webp"
           alt="Botella de jugo Savia sabor rojo"
           width="854"
           height="2287"
           data-botella-img
-          class="w-[22vw] max-w-[380px] min-w-[165px] object-contain drop-shadow-[0_30px_50px_rgba(90,100,20,0.3)]"
+          class="w-[max(22vw,32vh)] max-w-[380px] object-contain drop-shadow-[0_30px_50px_rgba(90,100,20,0.3)]"
         />
       </div>
     </div>
@@ -391,6 +403,7 @@ const arcoBeneficios = [
         gsap.set('[data-nav]', { y: 0 });
         gsap.set('[data-linea]', { yPercent: 0 });
         gsap.set('[data-botella]', { yPercent: 0 });
+        gsap.set('[data-halo]', { y: 0 });
         gsap.set('[data-cta]', { x: 0 });
         liberarScroll();
       }
@@ -409,7 +422,11 @@ const arcoBeneficios = [
     document.fonts.ready.then(() => {
       const cortes = gsap.utils
         .toArray<HTMLElement>('[data-linea]')
-        .map((linea) => new SplitText(linea, { type: 'chars' }));
+        // 'words,chars': sin el envoltorio por palabras, cada letra es un
+        // inline-block suelto y el navegador corta la línea entre dos letras
+        // cualesquiera — en pantallas angostas el título se parte al medio de
+        // una palabra. `corte.chars` sigue devolviendo todas las letras.
+        .map((linea) => new SplitText(linea, { type: 'words,chars' }));
 
       // Orden diagonal: entran primero las letras de arriba a la izquierda y
       // el frente avanza hacia abajo a la derecha.
@@ -445,6 +462,10 @@ const arcoBeneficios = [
           0
         )
         .to('[data-botella]', { yPercent: 0 }, 0)
+        // Las dos auras y el contorno, todos hijos de [data-halo]: mismo
+        // ease y misma duración (los defaults de la timeline) y misma
+        // posición 0 que la botella, así entran exactamente al mismo ritmo.
+        .to('[data-halo]', { y: 0 }, 0)
         .to('[data-cta]', { x: 0 }, 0);
     });
   }
@@ -503,6 +524,20 @@ const arcoBeneficios = [
   // El centro del halo apoyado sobre el borde inferior del hero. Lo escribe
   // GSAP y no una clase, porque la tercera sección lo baja todavía más.
   gsap.set(halo, { yPercent: 50 });
+
+  // Estado de entrada del halo — o sea de las DOS auras y el contorno, que
+  // son sus hijos, así que se mueven los tres juntos con un solo tween.
+  //
+  // Con el yPercent 50 de arriba, la mitad de arriba del halo asoma por
+  // encima del borde inferior del hero; bajarlo otro medio alto lo deja
+  // exactamente a ras del borde, o sea sin nada a la vista. Desde ahí sube
+  // hasta y:0 en la timeline de entrada, con el mismo ease, la misma
+  // duración y la misma posición (0) que la botella.
+  //
+  // Va en `y` y no en `yPercent` porque el yPercent ya está ocupado por el
+  // centrado de arriba, y porque la tercera sección también anima `y` — al
+  // terminar la entrada este queda en 0, así que ese tween arranca limpio.
+  if (halo && !sinMovimiento) gsap.set(halo, { y: () => halo.offsetHeight / 2 });
 
   // Los beneficios del arco no existen hasta la tercera sección.
   gsap.set(arcoItems, { opacity: 0, xPercent: -50 });

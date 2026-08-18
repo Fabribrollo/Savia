@@ -4,20 +4,20 @@ const jugos = [
   {
       nombre: 'Naranja & Jengibre',
       color: '850E10',
-      imagen: '/images/naranja-trim.png',
-      fondo: '/images/naranjafondo.png',
+      imagen: '/images/naranja-trim.webp',
+      fondo: '/images/naranjafondo.webp',
     },
     {
       nombre: 'Frutos Rojos',
       color: '9BA200',
-      imagen: '/images/rojo-trim.png',
-      fondo: '/images/rojofondo.png',
+      imagen: '/images/rojo-trim.webp',
+      fondo: '/images/rojofondo.webp',
     },
   {
     nombre: 'Lima & Menta',
     color: '0071B8',
-    imagen: '/images/amarillo-trim.png',
-    fondo: '/images/amarillofondo.png',
+    imagen: '/images/amarillo-trim.webp',
+    fondo: '/images/amarillofondo.webp',
   },
 ];
 
@@ -35,8 +35,19 @@ const jugos = [
   data-hero
   class="relative isolate flex min-h-dvh flex-col overflow-hidden bg-lima"
 >
-  <div class="flex flex-1 flex-col items-center justify-start w-full pt-4 mx-8 mb-8">
-    <h2 class="w-full whitespace-nowrap text-center text-6xl font-bold text-[#850E10] font-duper">
+  {/* px-8 y no mx-8: combinado con w-full, el margen se SUMA al 100% del
+      ancho del padre (100% + 64px) y la sección se desbordaba a lo ancho.
+      Como padding, el espacio queda adentro de la caja. */}
+  <div class="flex flex-1 flex-col items-center justify-start w-full pt-4 px-8 mb-8">
+    {/* El tamaño va en clamp y no en text-6xl fijo: con `whitespace-nowrap`
+        el texto no puede envolver, así que a 60px fijos en una pantalla
+        angosta medía más que el viewport y la máscara de overflow-hidden lo
+        recortaba. El tope de 3.75rem es el mismo text-6xl de antes, o sea que
+        en desktop no cambia nada. */}
+    <h2
+      class="w-full whitespace-nowrap text-center font-bold text-[#850E10] font-duper"
+      style="font-size: clamp(1.5rem, 8vw, 3.75rem);"
+    >
       {/* Una sola línea (whitespace-nowrap: sin el salto que tenía "Tu
           momento." / "Tu sabor" antes). Mismo mecanismo que el titular del
           hero: la línea recortada por su máscara, así el texto entra
@@ -48,15 +59,24 @@ const jugos = [
     {/* mt-8 acá arriba, igual al mt-8 que ya traía la fila de tarjetas ahí
         abajo: mismo espacio de los dos lados, así el subtítulo queda
         centrado en el hueco entre el título y las tarjetas. */}
-    <h5 data-sub-prod class="mb-4 text-center text-lg font-futura text-md text-[#520000] font-medium justify-center ">
+    {/* my-6 (24px arriba y abajo) y la fila de tarjetas sin mt: entre el
+        título y las tarjetas hay 76px y el subtítulo mide 28, así que 24 de
+        cada lado lo dejan centrado exacto. La fila arranca en el mismo punto
+        que antes (24 + 0 = los 16 + 32 que había), o sea que el layout no se
+        corre. Ojo: el rect del subtítulo se ve 40px más abajo de lo que dice
+        el layout, porque su estado inicial de GSAP es y:40. */}
+    <h5 data-sub-prod class="my-6 text-center text-lg font-futura text-md text-[#520000] font-medium justify-center ">
       Tres sabores. Tres formas de disfrutar la frescura.
     </h5>
 
-<div class="flex flex-col md:flex-row justify-center items-center gap-8 mt-8 w-full">
+{/* En mobile las tarjetas se apilan: w-full con tope de 500px, así se adaptan
+    al ancho disponible en vez de forzar 500px y salirse de la pantalla. El
+    min-w-[500px] recién entra en md+, donde ya están en fila y hay lugar. */}
+<div class="flex flex-col md:flex-row justify-center items-center gap-8 w-full">
   {jugos.map((jugo) => (
   <div
     data-tarjeta-prod
-    class="group card-jugo relative flex flex-col justify-center items-center gap-4 rounded-4xl p-4 min-w-[25%] overflow-hidden border border-white/35 bg-white/14 shadow-[inset_0_0_22px_rgba(0,0,0,0.13)] backdrop-blur-md backdrop-saturate-[1.2]"
+    class="group card-jugo relative flex w-full max-w-[500px] flex-col justify-center items-center gap-4 rounded-4xl p-4 overflow-hidden border border-white/35 bg-white/14 shadow-[inset_0_0_22px_rgba(0,0,0,0.13)] backdrop-blur-md backdrop-saturate-[1.2] md:min-w-[500px]"
     style={`color: #${jugo.color};`}
   >
     <h2 class="text-4xl font-bold text-center pt-10 pt-6 font-duper z-10">{jugo.nombre}</h2>
@@ -132,7 +152,7 @@ const jugos = [
     // posición final durante el instante en que cargan las tipografías.
     gsap.set('[data-linea-prod]', { yPercent: 115 });
     gsap.set(tarjetas, { y: SUBIDA_TARJETAS, opacity: 0 });
-    if (subtitulo) gsap.set(subtitulo, { y: 40, opacity: 0 });
+    if (subtitulo) gsap.set(subtitulo, { opacity: 0 });
 
     // El hero recién arma su propio pin (que agranda el documento en varios
     // miles de px) cuando termina su entrada, hasta 4s después de cargar
@@ -161,7 +181,11 @@ const jugos = [
       document.fonts.ready.then(() => {
         const cortes = gsap.utils
           .toArray<HTMLElement>('[data-linea-prod]')
-          .map((linea) => new SplitText(linea, { type: 'chars' }));
+          // 'words,chars': sin el envoltorio por palabras, cada letra es un
+          // inline-block suelto y el navegador corta la línea entre dos
+          // letras cualesquiera — en pantallas angostas el título se parte al
+          // medio de una palabra. `corte.chars` sigue devolviendo todas.
+          .map((linea) => new SplitText(linea, { type: 'words,chars' }));
 
         // Mismo orden diagonal que el titular del hero.
         const letras = cortes

@@ -15,7 +15,7 @@ import Boton from "../Boton.astro";
 <div
   data-fondo-banner
   aria-hidden="true"
-  class="absolute inset-0 -z-10 bg-[url('/images/banner.jpg')] bg-cover bg-center"
+  class="absolute inset-0 -z-10 bg-[url('/images/banner.webp')] bg-cover bg-center"
 ></div>
 
 {/* flex-1 y no h-full: la <section> define su alto con `min-height`, y los
@@ -24,16 +24,19 @@ import Boton from "../Boton.astro";
     texto. Como la section es flex-col, `flex-1` sí lo estira hasta el fondo. */}
 <div class="flex flex-1 w-full flex-col">
 
-<div class="my-25 mx-10">
+{/* Este div envuelve título, subtítulo y botón: la entrada y la salida se
+    animan sobre él, no sobre las tres piezas por separado. */}
+<div data-contenido-banner class="my-25 mx-10">
 
 
-  <h2 class="text-start text-7xl font-bold text-[#CED500] font-duper max-w-[500px]">
-    {/* Mismo mecanismo que el titular del hero: la línea recortada por su
-        propia máscara, el texto entra deslizándose desde abajo letra por
-        letra (ver el script al final del archivo). */}
-    <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
-      <span class="block" data-linea-banner>Cada día tiene un movimiento</span>
-    </span>
+  {/* Sin la máscara de overflow-hidden ni el partido en letras: el título ya
+      no se escribe, entra de una pieza desde la izquierda igual que el
+      subtítulo y el botón (ver el script al final del archivo). */}
+  <h2
+    data-titulo-banner
+    class="text-start text-7xl font-bold text-[#CED500] font-duper max-w-[500px]"
+  >
+    Cada día tiene un movimiento
   </h2>
   <h5 data-sub-banner class="text-start text-2xl font-futura text-[#FFEDC2] my-4 font-medium">
     Cada movimiento tiene una Savia.
@@ -69,50 +72,111 @@ import Boton from "../Boton.astro";
 </section>
 
 <script>
-  import { gsap, GOLPE, esperarHero, letrasDiagonal } from '../../scripts/entrada';
+  import { gsap, GOLPE, esperarHero } from '../../scripts/entrada';
 
   const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const seccion = document.querySelector<HTMLElement>('#banner');
-  const subtitulo = document.querySelector<HTMLElement>('[data-sub-banner]');
-  const cta = document.querySelector<HTMLElement>('[data-cta-banner]');
+  const contenido = document.querySelector<HTMLElement>('[data-contenido-banner]');
   const fondo = document.querySelector<HTMLElement>('[data-fondo-banner]');
 
-  if (seccion && !sinMovimiento) {
+  if (seccion && contenido && !sinMovimiento) {
     const DUR = 1;
-    const REPARTO = 0.2;
 
-    // Cuánto tienen que correrse para arrancar afuera de cuadro, medido desde
-    // su posición real: así quedan justo fuera sin importar el viewport.
-    const fueraIzquierda = (el: HTMLElement) => -(el.getBoundingClientRect().right + 60);
-
-    gsap.set('[data-linea-banner]', { yPercent: 115 });
-    if (subtitulo) gsap.set(subtitulo, { x: fueraIzquierda(subtitulo), opacity: 0 });
-    if (cta) gsap.set(cta, { x: fueraIzquierda(cta), opacity: 0 });
-    // El fondo arranca un poco más grande y transparente, y se asienta a su
-    // tamaño real con opacidad plena — mismo recurso que un "Ken Burns"
-    // liviano, entra con GOLPE como todo lo demás de esta sección.
-    if (fondo) gsap.set(fondo, { scale: 1.12, opacity: 0 });
+    // El fondo arranca un poco más grande y se asienta a su tamaño real —
+    // un "Ken Burns" liviano, con GOLPE como todo lo demás de la sección.
+    // Sin fade: la opacidad queda en 1 de entrada.
+    if (fondo) gsap.set(fondo, { scale: 1.12 });
 
     esperarHero(() => {
+      // Con la tipografía ya cargada: el offset sale de medir el contenido, y
+      // sin la fuente definitiva la medida sale mal.
       document.fonts.ready.then(() => {
-        const letras = letrasDiagonal('[data-linea-banner]');
+        // Hasta dónde llega lo que REALMENTE SE VE. No sirve medir las cajas:
+        // el subtítulo es un bloque y su caja llega hasta el margen derecho de
+        // la sección aunque su texto termine mucho antes, así que dominaba el
+        // máximo y mandaba todo el contenido fuera de cuadro sin que asomara
+        // nada. Con un Range sobre el contenido de cada hijo se mide el texto
+        // en sí; el botón no tiene texto suelto que medir, así que para él
+        // vale su caja (que es del tamaño del botón).
+        const derechaVisible = (el: Element) => {
+          const rango = document.createRange();
+          rango.selectNodeContents(el);
+          const r = rango.getBoundingClientRect();
+          return r.width ? r.right : el.getBoundingClientRect().right;
+        };
 
-        gsap.timeline({
-          defaults: { ease: GOLPE, duration: DUR },
-          scrollTrigger: {
-            trigger: seccion,
-            start: 'top 90%',
-            end: 'top 20%',
-            scrub: 0.6,
-          },
-        })
-          .to(letras, { yPercent: 0, x: 0, duration: DUR - REPARTO, stagger: { amount: REPARTO } }, 0)
-          .to(subtitulo, { x: 0, duration: DUR }, 0)
-          .fromTo(subtitulo, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 0)
-          .to(cta, { x: 0, duration: DUR }, 0.08)
-          .fromTo(cta, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 0.08)
-          .to(fondo, { scale: 1, duration: DUR }, 0)
-          .fromTo(fondo, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'none' }, 0);
+        const derechaContenido = () => {
+          // Se descuenta el `x` que GSAP ya escribió: getBoundingClientRect()
+          // incluye el transform, y sin esto el valor se realimenta en cada
+          // refresh y el contenido se va corriendo cada vez más lejos.
+          const x = gsap.getProperty(contenido, 'x') as number;
+          return Math.max(...[...contenido.children].map(derechaVisible)) - x;
+        };
+
+        // Desplazamiento completo: el borde derecho del contenido queda justo
+        // en x=0, o sea entero fuera de cuadro. Sin asomo.
+        const oculto = () => -derechaContenido();
+
+        gsap.set(contenido, { x: oculto });
+
+        // ---- ENTRADA: de 'top 50%' a 'top top' ---------------------------
+        // Cierra cuando la sección termina de llenar la pantalla ("cuando se
+        // completa el scroll se muestra todo"), pero arranca a mitad de
+        // camino y no desde 'top bottom'.
+        //
+        // El motivo es que el golpe no se sentía: con el rango de un viewport
+        // entero, la sección se desplazaba tanto en vertical como el contenido
+        // en horizontal, y el movimiento vertical tapaba al horizontal. Con
+        // medio viewport el recorrido horizontal pasa a ser el mayor de los
+        // dos, y el tramo final de GOLPE llega a moverse varias veces más
+        // rápido que el scroll — ahí es donde se lee el golpe.
+        //
+        // scrub bajo (0.3 y no 0.6) por lo mismo: cuanto más lag, más se
+        // suaviza justo la frenada seca que da el efecto.
+        gsap
+          .timeline({
+            defaults: { ease: GOLPE, duration: DUR },
+            scrollTrigger: {
+              trigger: seccion,
+              start: 'top 50%',
+              end: 'top top',
+              scrub: 0.3,
+              invalidateOnRefresh: true,
+            },
+          })
+          // fromTo y no to: con invalidateOnRefresh un `to` relee su arranque
+          // del estado actual, y si el refresh cae con el tween resuelto el
+          // origen queda en 0 y deja de moverse (mismo problema que documenta
+          // Home.astro).
+          .fromTo(contenido, { x: oculto }, { x: 0 }, 0);
+
+        // ---- DE-ZOOM DEL FONDO: aparte del resto ------------------------
+        // Sale de la timeline de entrada por dos motivos. Uno, el rango: allá
+        // son medio viewport (360px) y acá son dos viewports enteros, así que
+        // el mismo 1.12 → 1 se reparte en 4 veces más scroll y se siente
+        // mucho más lento. Dos, el ease: GOLPE deja el zoom casi congelado y
+        // después lo resuelve de un saque, que es justo lo contrario de lo
+        // que se busca acá. Con 'none' el de-zoom avanza parejo con el
+        // scroll, como corresponde a un Ken Burns.
+        gsap.fromTo(
+          fondo,
+          { scale: 1.12 },
+          {
+            scale: 1,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: seccion,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: 0.6,
+              invalidateOnRefresh: true,
+            },
+          }
+        );
+
+        // Sin salida: una vez que el contenido llega a x:0 se queda ahí y
+        // acompaña a la sección mientras se scrollea. Al volver hacia arriba,
+        // el scrub de la entrada lo revierte solo.
       });
     });
   }

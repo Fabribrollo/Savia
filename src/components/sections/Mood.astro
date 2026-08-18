@@ -1,0 +1,37 @@
+---
+const moodItems = [
+  {
+    title: "Energy Mood",
+    image: "/images/mano_naranja.webp",
+  },
+  {
+    title: "Fresh Mood",
+    image: "/images/mano_amarillo.webp",
+  },
+  {
+    title: "Good Mood",
+    image: "/images/mano_rojo.webp",
+  },
+];
+---
+
+<section class="bg-[#66AAD4] py-16 min-h-[80vh]">
+  <div class="container mx-auto px-4 flex flex-col items-center text-center">
+
+    <h2 class="text-6xl font-bold text-[#850E10] mb-8 font-duper max-w-[500px] ">Elegí cómo querés sentirte hoy</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {moodItems.map((mood) => (
+        <div
+          class="relative flex min-w-[400px] max-w-[500px] min-h-[600px]  flex-col items-center overflow-hidden rounded-[31px] bg-cover bg-center bg-no-repeat p-6"
+          style={`background-image: url('${mood.image}');`}
+        >
+          <h3 class="mt-8 font-duper text-3xl font-bold text-crema">{mood.title}</h3>
+
+        </div>
+      ))}
+    </div>
+  </div>
+
+
+</section>

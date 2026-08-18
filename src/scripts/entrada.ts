@@ -65,7 +65,13 @@ export function esperarHero(cb: () => void) {
 export function letrasDiagonal(selectorLinea: string): HTMLElement[] {
   const cortes = gsap.utils
     .toArray<HTMLElement>(selectorLinea)
-    .map((linea) => new SplitText(linea, { type: 'chars' }));
+    // 'words,chars' y no solo 'chars': partiendo únicamente en letras, cada
+    // una queda como su propio inline-block y el navegador puede cortar la
+    // línea entre dos letras cualesquiera — en pantallas angostas el título
+    // se parte en medio de una palabra. Al envolver también por palabras, el
+    // corte solo puede caer en los espacios, y las letras se siguen animando
+    // igual (`corte.chars` las devuelve todas).
+    .map((linea) => new SplitText(linea, { type: 'words,chars' }));
 
   const letras = cortes
     .flatMap((corte) => corte.chars as HTMLElement[])

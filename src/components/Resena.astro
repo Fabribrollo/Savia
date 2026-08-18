@@ -13,15 +13,17 @@ const { titulo, texto, nombre, ciudad, imagen, class: clase = '' } = Astro.props
 ---
 
 <div>
-  <article class="relative z-10 flex h-[19rem] min-w-[400px] max-w-[500px] flex-col rounded-[0.8rem] rounded-bl-[0px] bg-crema p-7">
-    <h3 class="font-duper text-4xl font-bold leading-tight text-azul sm:text-3xl">{titulo}</h3>
-    <p class="mt-3 text-xl font-futura text-base font-medium leading-snug text-azul">{texto}</p>
+  {/* Escalonado mobile-first: los 400px de ancho no entraban en una pantalla
+      de 375. Los valores de sm+ en adelante son los mismos de antes. */}
+  <article class="relative z-10 flex h-[15rem] min-w-[17rem] max-w-[19rem] flex-col rounded-[0.8rem] rounded-bl-[0px] bg-crema p-5 sm:h-[19rem] sm:min-w-[400px] sm:max-w-[500px] sm:p-7">
+    <h3 class="font-duper text-2xl font-bold leading-tight text-azul sm:text-3xl">{titulo}</h3>
+    <p class="mt-2 font-futura text-sm font-medium leading-snug text-azul sm:mt-3 sm:text-xl">{texto}</p>
     <div class="mt-auto flex gap-1.5">
       {
         Array.from({ length: 5 }).map(() => (
           <span
             aria-hidden="true"
-            class="estrella block size-7"
+            class="estrella block size-5 sm:size-7"
             style="--estrella: url(/icons/estrella.svg)"
           />
         ))
@@ -30,7 +32,19 @@ const { titulo, texto, nombre, ciudad, imagen, class: clase = '' } = Astro.props
   </article>
 
   <div class="flex">
-    <svg width="60" height="49" viewBox="0 0 60 49" fill="none" xmlns="http://www.w3.org/2000/svg" class="my-[-10px] shrink-0">
+    {/* Alto explícito en las dos medidas, no `h-auto`: en un SVG el alto
+        automático NO se deduce del viewBox como en un <img>, y siendo flex
+        item se estiraba al alto de la fila (96px en vez de 49), deformando el
+        pico. sm+ son los valores originales exactos; mobile es lo mismo al
+        70% (42×34, margen -7). */}
+    <svg
+      viewBox="0 0 60 49"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      width="60"
+      height="49"
+      class="my-[-7px] h-[34px] w-[42px] shrink-0 sm:my-[-10px] sm:h-[49px] sm:w-[60px]"
+    >
       <path
         d="M0 46.1016V2.83871C0 1.27093 1.27093 0 2.83871 0H57.0325C59.7173 0 60.9017 3.38217 58.8035 5.0572L4.60974 48.32C2.75058 49.8042 0 48.4805 0 46.1016Z"
         fill="#FFEDC2"
@@ -40,11 +54,11 @@ const { titulo, texto, nombre, ciudad, imagen, class: clase = '' } = Astro.props
         fill="#FFEDC2"
       />
     </svg>
-    <div class="my-2 flex items-center gap-3">
-      <img src={imagen} alt="" aria-hidden="true" class="size-15 shrink-0 rounded-full bg-azul/10 object-cover" />
+    <div class="my-2 flex items-center gap-2 sm:gap-3">
+      <img src={imagen} alt="" aria-hidden="true" class="size-11 shrink-0 rounded-full bg-azul/10 object-cover sm:size-15" />
       <div class="flex justify-center flex-col gap-0.5">
-        <p class="font-futura text-lg font-semibold leading-tight text-vino">{nombre}</p>
-        <p class="font-futura text-lg font-normal text-vino">{ciudad}</p>
+        <p class="font-futura text-sm font-semibold leading-tight text-vino sm:text-lg">{nombre}</p>
+        <p class="font-futura text-sm font-normal text-vino sm:text-lg">{ciudad}</p>
       </div>
     </div>
   </div>

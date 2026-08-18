@@ -12,7 +12,7 @@ import Aura from '../Aura.astro';
 const botellas = [
   {
     nombre: 'Naranja & Jengibre',
-    imagen: '/images/naranja-trim.png',
+    imagen: '/images/naranja-trim.webp',
     // Las laterales van apenas más bajas y corridas: eso alcanza para mandarlas
     // hacia atrás. Sin desplazamiento vertical, así las tres bases coinciden
     // (de eso se encarga el `items-end` del contenedor).
@@ -23,13 +23,13 @@ const botellas = [
   },
   {
     nombre: 'Frutos Rojos',
-    imagen: '/images/rojo-trim.png',
+    imagen: '/images/rojo-trim.webp',
     clase: 'z-20 h-[70vh]',
     orden: 3,
   },
   {
     nombre: 'Lima & Menta',
-    imagen: '/images/amarillo-trim.png',
+    imagen: '/images/amarillo-trim.webp',
     clase: 'z-10 h-[64vh] -ml-11',
     orden: 2,
   },
@@ -86,7 +86,7 @@ const frutas = [
       las frutas (z-0), debajo de las botellas (z-10/z-20). */}
   <div class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center">
     <div class="relative aspect-square w-[100vw] max-w-[800px]">
-      <Aura size="100%" color="#0071B8" nucleo="60%" fin="100%" intensidad={1} />
+      <Aura size="100%" color="#0071B8" nucleo="50%" fin="100%" intensidad={1} />
     </div>
   </div>
 
