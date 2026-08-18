@@ -60,19 +60,14 @@ import Boton from "../Boton.astro";
 </div>
 </div>
 
-{/* Separador al pie de la sección, por encima del fondo (z-10 contra el
-    -z-10 de data-fondo-banner). w-full: todo el ancho. */}
-<img
-  src="/icons/separador.svg"
-  alt=""
-  aria-hidden="true"
-  class="pointer-events-none absolute inset-x-0 bottom-0 z-10 block w-full"
-/>
+{/* El separador ya no vive acá: pasó a ser el borde superior de Favorita,
+    que lo usa como línea de agua mientras sube y tapa esta sección (ver el
+    pin del script y el comentario de Favorita.astro). */}
 
 </section>
 
 <script>
-  import { gsap, GOLPE, esperarHero } from '../../scripts/entrada';
+  import { gsap, GOLPE, esperarHero, ScrollTrigger } from '../../scripts/entrada';
 
   const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const seccion = document.querySelector<HTMLElement>('#banner');
@@ -88,6 +83,30 @@ import Boton from "../Boton.astro";
     if (fondo) gsap.set(fondo, { scale: 1.12 });
 
     esperarHero(() => {
+      // ---- PIN: el banner se queda quieto y Favorita lo ahoga -------------
+      // Desde que el banner llena la pantalla hasta que su borde inferior
+      // llega arriba de todo, la sección queda fija. La sensación es que el
+      // scroll "no baja": lo único que se mueve es lo que viene después, o
+      // sea Favorita, que sube por encima (z-index) con separador.svg de
+      // línea de agua hasta taparlo del todo.
+      //
+      // pinSpacing:false es lo que hace que no haga falta ningún cálculo: no
+      // se agrega recorrido extra al documento, así que el tramo de scroll
+      // que se "gasta" tapando el banner es exactamente el alto que la
+      // sección ya ocupaba. Por eso el final del pin ('bottom top') coincide
+      // solo con el instante en que Favorita termina de cubrirlo, mida lo
+      // que mida cada una.
+      ScrollTrigger.create({
+        trigger: seccion,
+        start: 'top top',
+        end: 'bottom top',
+        pin: true,
+        pinSpacing: false,
+        // Con scroll rápido el pin se aplica un frame tarde y se ve un salto;
+        // esto lo adelanta un poco.
+        anticipatePin: 1,
+      });
+
       // Con la tipografía ya cargada: el offset sale de medir el contenido, y
       // sin la fuente definitiva la medida sale mal.
       document.fonts.ready.then(() => {

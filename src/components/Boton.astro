@@ -46,17 +46,25 @@ const {
   {...resto}
 >
   {/*
-    Círculo centrado en la esquina superior izquierda. Escala de 0 a 1 al
-    hacer hover y vuelve a 0 al salir con la misma curva, así la reversa es
-    idéntica. Mide 260% del ancho del botón: el radio (130%) supera siempre
-    la diagonal, así que al llegar a escala 1 no queda ninguna esquina sin
-    pintar. La transición va sobre `transform` del span, no del <a>, para no
-    pelearse con el `x` que GSAP le escribe al botón en la entrada.
+    El círculo que crece desde la esquina superior izquierda al hacer hover, y
+    se vuelve a cerrar con la misma curva al salir.
+
+    Antes era un span de 260% del ancho que escalaba de 0 a 1 y quedaba dentro
+    gracias al `overflow-hidden` del <a>. En Mac ese recorte no se respetaba y
+    el círculo se salía del botón: WebKit no aplica el recorte con
+    border-radius a un descendiente que tiene su propio transform, y menos
+    todavía cuando el que recorta también está transformado — y al botón GSAP
+    le escribe un `x` en la entrada del hero, así que siempre lo está.
+
+    Ahora el span mide exactamente lo mismo que el botón (`inset-0`) y lo que
+    crece es un `clip-path`, no su tamaño. El efecto se ve igual, pero ya no
+    depende de que el navegador recorte nada: aunque no lo recortara, el span
+    no tiene de dónde sobresalir.
+
+    Va en <style> y no en utilidades porque `circle(150% at 0 0)` entre
+    corchetes de Tailwind es más fácil de romper que de leer.
   */}
-  <span
-    aria-hidden="true"
-    class="pointer-events-none absolute left-0 top-0 -z-10 aspect-square w-[260%] -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full bg-azul transition-transform duration-[400ms] ease-in-out group-hover:scale-100"
-  ></span>
+  <span aria-hidden="true" class="explosion pointer-events-none absolute inset-0 -z-10 rounded-full bg-azul"></span>
 
   <slot />
   {
@@ -73,3 +81,25 @@ const {
     )
   }
 </a>
+
+<style>
+  /* 150% y no 100%: el radio de `circle()` en % se mide contra
+     sqrt(ancho² + alto²) / sqrt(2), y la distancia de la esquina de arriba a
+     la izquierda hasta la de abajo a la derecha es sqrt(ancho² + alto²). O
+     sea que hace falta un sqrt(2) ≈ 141.4% para llegar al extremo, sea cual
+     sea la forma del botón. 150% deja margen sin agrandar la animación. */
+  .explosion {
+    clip-path: circle(0% at 0 0);
+    transition: clip-path 400ms ease-in-out;
+  }
+
+  a:hover .explosion {
+    clip-path: circle(150% at 0 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .explosion {
+      transition-duration: 1ms;
+    }
+  }
+</style>

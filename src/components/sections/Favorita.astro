@@ -56,6 +56,34 @@ const frutas = [
 ];
 ---
 
+{/* Envoltorio del "agua". La sección no se anima ni se mueve por su cuenta:
+    lo que la hace subir es el pin del banner (ver Banner.astro), que deja esa
+    sección fija mientras esta sigue el scroll normal y le pasa por encima.
+    El z-20 es lo que decide ese "por encima": el banner pineado queda en
+    position:fixed y sin esto se pintaría delante.
+
+    El envoltorio existe para poder colgar la ola FUERA de la sección: la
+    sección lleva overflow-hidden (recorta frutas y aura) y ahí adentro la ola
+    quedaría cortada. */}
+<div class="relative z-20">
+
+  {/* La línea de agua. El contenedor recorta a lo ancho para que la ola pueda
+      ser más ancha que la pantalla y derivar en horizontal sin descubrir los
+      bordes (ver el vaivén en el script). Su alto sale del aspect-ratio del
+      SVG y el bottom lo apoya justo arriba del azul; el -1px es para que no
+      quede una hendija entre la ola y el bloque de agua por redondeo. */}
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-x-0 bottom-[calc(100%-1px)] z-10 aspect-[1440/279] overflow-hidden"
+  >
+    <img
+      data-ola-favorita
+      src="/icons/separador.svg"
+      alt=""
+      class="absolute bottom-0 left-[-5%] w-[110%] max-w-none"
+    />
+  </div>
+
 <section
   id="favorita"
   class="relative isolate flex min-h-dvh flex-col items-center justify-center gap-10 overflow-hidden bg-[#66AAD4]"
@@ -66,8 +94,10 @@ const frutas = [
     {
       frutas.map(({ tipo, pos, tam, giro }) => (
         <span
+          data-fruta-favorita
+          data-giro={giro}
           class:list={['fruta absolute block', pos]}
-          style={`width:${tam};aspect-ratio:1;rotate:${giro}deg;--fruta:url(/icons/${tipo}.svg);`}
+          style={`width:${tam};aspect-ratio:1;--fruta:url(/icons/${tipo}.svg);`}
         />
       ))
     }
@@ -86,7 +116,7 @@ const frutas = [
       las frutas (z-0), debajo de las botellas (z-10/z-20). */}
   <div class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center">
     <div class="relative aspect-square w-[100vw] max-w-[800px]">
-      <Aura size="100%" color="#0071B8" nucleo="50%" fin="100%" intensidad={1} />
+      <Aura marca="favorita" size="100%" color="#0071B8" nucleo="50%" fin="100%" intensidad={1} />
     </div>
   </div>
 
@@ -109,6 +139,7 @@ const frutas = [
     }
   </div>
 </section>
+</div>
 
 <style>
   /* Mismo mecanismo que .fruta en Home.astro: el SVG de máscara aporta la
@@ -140,36 +171,120 @@ const frutas = [
     .toArray<HTMLElement>('[data-botella-favorita]')
     .sort((a, b) => Number(a.dataset.orden) - Number(b.dataset.orden));
 
+  const frutas = gsap.utils.toArray<HTMLElement>('[data-fruta-favorita]');
+
+  // El giro lo escribe GSAP y no el CSS. En el marcado iba como propiedad
+  // `rotate`, que es independiente de `transform`: al animarles la `y`, GSAP
+  // toma el control de las tres (translate/rotate/scale) y el valor del CSS
+  // deja de ser confiable. Como `gsap.set` acá es estático (no una animación),
+  // va afuera del guard de prefers-reduced-motion: sin movimiento las frutas
+  // igual tienen que quedar giradas.
+  gsap.set(frutas, { rotation: (_i, el: HTMLElement) => Number(el.dataset.giro) });
+
   if (seccion && !sinMovimiento) {
     const DUR = 1;
     const REPARTO = 0.2;
 
-    // Bastante más que su propio alto, para que arranquen desde fuera de la
-    // sección y no a mitad de camino (mismo criterio que en Productos).
-    const SUBIDA_BOTELLAS = () => Math.round(window.innerHeight * 0.4);
+    // Cuánto bajar un elemento para dejarlo justo debajo del borde inferior de
+    // la sección. Se mide contra su propio `offsetTop` (que ya es relativo a
+    // la sección) en vez de usar un vh fijo: las frutas están repartidas por
+    // toda la altura, así que un mismo número las dejaría a unas fuera y a
+    // otras a mitad de camino. Con esto todas arrancan igual de tapadas por el
+    // overflow-hidden — que es lo que reemplaza al fade: no hace falta
+    // desvanecer nada si el elemento entra desde afuera del recorte.
+    const desdeAbajo = (_i: number, el: HTMLElement) => seccion.offsetHeight - el.offsetTop;
 
     gsap.set('[data-linea-favorita]', { yPercent: 115 });
-    gsap.set(botellas, { y: SUBIDA_BOTELLAS, opacity: 0 });
+    gsap.set(botellas, { y: desdeAbajo });
+    gsap.set(frutas, { y: desdeAbajo });
+    gsap.set('[data-aura="favorita"]', { scale: 0.15 });
 
     esperarHero(() => {
       document.fonts.ready.then(() => {
         const letras = letrasDiagonal('[data-linea-favorita]');
 
-        gsap.timeline({
-          defaults: { ease: GOLPE, duration: DUR },
-          scrollTrigger: {
-            trigger: seccion,
-            start: 'top 90%',
-            end: 'top 20%',
-            scrub: 0.6,
-          },
-        })
-          .to(letras, { yPercent: 0, x: 0, duration: DUR - REPARTO, stagger: { amount: REPARTO } }, 0)
+        // Momento en que entran botellas, texto y aura. Las frutas del fondo
+        // arrancan solas antes (en 0) y el resto cae junto acá: el texto ya no
+        // se adelanta a las botellas, entran a la par.
+        const JUNTOS = 0.3;
+
+        gsap
+          .timeline({
+            defaults: { ease: GOLPE, duration: DUR },
+            scrollTrigger: {
+              trigger: seccion,
+              // Más tarde que antes ('top 90%' → 'top 20%'): la sección sube
+              // como agua sobre el banner, y con el rango viejo lo de adentro
+              // ya estaba armado cuando todavía se veía apenas una franja.
+              // Ahora el primer tercio de esa subida es solo agua.
+              start: 'top 70%',
+              end: 'top 5%',
+              scrub: 0.6,
+              // Los `desdeAbajo` son funciones: sin esto quedarían con la
+              // medida del primer cálculo y al redimensionar las frutas
+              // arrancarían de cualquier lado.
+              invalidateOnRefresh: true,
+            },
+          })
+          // fromTo y no to en TODO, no solo en lo que mide por función: con
+          // invalidateOnRefresh, un `to` relee su origen del estado actual y
+          // si el refresh cae con el tween resuelto se queda sin recorrido
+          // (mismo problema que documenta Home.astro).
+          //
+          // 'random' y no el orden del array: son fondo, y un stagger parejo
+          // de izquierda a derecha se lee como una fila ordenada en vez de
+          // como algo que flota hacia arriba.
+          .fromTo(
+            frutas,
+            { y: desdeAbajo },
+            { y: 0, stagger: { amount: 0.5, from: 'random' } },
+            0
+          )
+          .fromTo(
+            letras,
+            { yPercent: 115, x: -22 },
+            { yPercent: 0, x: 0, duration: DUR - REPARTO, stagger: { amount: REPARTO } },
+            JUNTOS
+          )
+          // Sin opacity: las botellas ya no aparecen de la nada, entran
+          // enteras desde abajo del recorte de la sección.
           // "Debe verse fluido": stagger amplio (0.35 de los DUR=1 totales)
-          // para que la segunda y la tercera botella arranquen bien
-          // solapadas con la anterior en vez de esperar a que termine.
-          .to(botellas, { y: 0, opacity: 1, stagger: { amount: 0.35, ease: 'none' } }, 0.15);
+          // para que la segunda y la tercera arranquen bien solapadas con la
+          // anterior en vez de esperar a que termine.
+          .fromTo(
+            botellas,
+            { y: desdeAbajo },
+            { y: 0, stagger: { amount: 0.35, ease: 'none' } },
+            JUNTOS
+          )
+          // El aura acompaña a las botellas: arranca con ellas y termina de
+          // crecer un poco después de que la última se acomoda, así el halo
+          // "se abre" detrás del grupo ya armado.
+          //
+          // Ease aparte del resto: GOLPE deja el aura congelada en chiquito y
+          // después la abre de un saque, que en un degradado tan grande se
+          // lee como un parpadeo. Con power2.out crece parejo de entrada y
+          // frena al final.
+          .fromTo(
+            '[data-aura="favorita"]',
+            { scale: 0.15 },
+            { scale: 1, duration: DUR + 0.35, ease: 'power2.out' },
+            JUNTOS
+          );
       });
+    });
+
+    // Vaivén de la ola, en loop y suelto del scroll: es lo que hace que la
+    // línea de agua se lea como agua y no como un borde recortado mientras
+    // sube. Va en xPercent (no en x) para que el recorrido escale con el
+    // ancho, y se queda corto a propósito — el contenedor le da 5% de
+    // sobrante de cada lado, así nunca asoma el final de la imagen.
+    gsap.to('[data-ola-favorita]', {
+      xPercent: -3,
+      duration: 4,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1,
     });
   }
 </script>
