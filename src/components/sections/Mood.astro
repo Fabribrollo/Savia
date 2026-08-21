@@ -3,14 +3,17 @@ const moodItems = [
   {
     title: "Energy Mood",
     image: "/images/mano_naranja.webp",
+    fondo: "/icons/fondo1.svg",
   },
   {
     title: "Fresh Mood",
     image: "/images/mano_amarillo.webp",
+    fondo: "/icons/fondo2.svg",
   },
   {
     title: "Good Mood",
     image: "/images/mano_rojo.webp",
+    fondo: "/icons/fondo3.svg",
   },
 ];
 ---
@@ -20,10 +23,24 @@ const moodItems = [
 
     <h2 class="text-6xl font-bold text-[#850E10] mb-8 font-duper max-w-[500px] ">Elegí cómo querés sentirte hoy</h2>
     
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    {/* Las tres en una sola fila desde md. Lo que hacía falta para que eso no
+        se saliera de la pantalla era sacarles el `min-w-[400px]` a las
+        tarjetas (ver abajo): sin ancho mínimo se reparten el lugar que haya y
+        el `max-w` las topa cuando sobra. El gap también achica en medianas,
+        que es donde cada px de ancho cuenta.
+
+        `w-full` en la grilla: el contenedor de arriba es un flex con
+        `items-center`, y eso encoge a los hijos a su contenido — sin ancho
+        propio, las columnas salían de 198px en vez de repartirse el lugar
+        disponible. */}
+      <div class="grid w-full grid-cols-1 gap-4 md:grid-cols-3 md:gap-6 xl:gap-8">
+      {/* Sin ancho mínimo: con `min-w-[400px]` tres columnas pedían 1264px, así
+          que desde los 768 en que arranca el grid de tres y hasta ahí se salían
+          de la pantalla — y en mobile una sola ya no entraba en 390. El `max-w`
+          las sigue topando cuando sobra lugar. */}
       {moodItems.map((mood) => (
         <div
-          class="relative flex min-w-[400px] max-w-[500px] min-h-[600px]  flex-col items-center overflow-hidden rounded-[31px] bg-cover bg-center bg-no-repeat p-6"
+          class="relative flex w-full max-w-[500px] min-h-[600px] flex-col items-center overflow-hidden rounded-[31px] bg-cover bg-center bg-no-repeat p-6"
           style={`background-image: url('${mood.image}');`}
         >
           <h3 class="mt-8 font-duper text-3xl font-bold text-crema">{mood.title}</h3>

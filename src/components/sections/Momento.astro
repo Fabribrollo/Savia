@@ -17,17 +17,62 @@ const Desplegables = [
 const ANCHO_CERRADO = 190;
 const GAP = 28;
 const ANCHO_TOTAL_CERRADO = ANCHO_CERRADO * Desplegables.length + GAP * (Desplegables.length - 1);
+
+// Mismo mecanismo, tamaños y paleta que las frutas de Favorita (que comparte
+// con esta sección el fondo #66AAD4). `tam` va en vw sin unidad: lo consume
+// --tam y el CSS le pone un piso en px para que en mobile no queden
+// diminutas (ver .fruta más abajo).
+//
+// La fila de desplegables cerrada mide 1062px centrados, así que su borde
+// izquierdo cae cerca del 17% del ancho: las dos frutas que van "tocando el
+// primer momento" arrancan un poco antes de ese 17% y terminan justo encima,
+// y como el bloque va detrás (z-0, primero en el DOM) lo que se ve es la
+// fruta asomando por detrás de la tarjeta.
+const frutas = [
+  { tipo: 'hojaMenta', pos: 'left-[10%] top-[14%]', tam: 7, giro: -16 },
+  { tipo: 'frutilla', pos: 'left-[10%] top-[55%]', tam: 8, giro: 13 },
+  { tipo: 'sandia', pos: 'left-[3%] top-[76%]', tam: 9, giro: -21 },
+  { tipo: 'arandano', pos: 'right-[7%] top-[11%]', tam: 5, giro: 17 },
+  { tipo: 'frutilla', pos: 'right-[5%] top-[44%]', tam: 8, giro: -11 },
+  { tipo: 'jengibre', pos: 'right-[8%] top-[72%]', tam: 7, giro: 20 },
+];
 ---
 
 <section
   id="momento"
   class="relative isolate flex min-h-dvh flex-col items-center justify-center gap-10 overflow-hidden bg-[#66AAD4] py-16"
 >
-  {/* position:relative + alto fijo: los 5 desplegables van position:absolute
-      adentro (ver Desplegable.astro), y es el script de acá abajo el que les
-      calcula "left" y "width" en px. Con eso los cerrados nunca cambian de
-      tamaño al abrirse uno — solo se corren de lugar. */}
-  <div data-desplegables class="relative mx-auto h-[68vh] w-full max-w-[1360px] px-4">
+  {/* Frutas del fondo, igual que en Favorita. Van primeras en el DOM y con
+      z-0: los desplegables (posicionados) y el texto (que GSAP transforma, y
+      eso lo pinta como si estuviera posicionado) vienen después, así que
+      quedan por delante sin necesidad de darles z-index a ellos. */}
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0">
+    {
+      frutas.map(({ tipo, pos, tam, giro }) => (
+        <img
+          data-fruta-momento
+          data-giro={giro}
+          src={`/icons/fondo/${tipo}-celeste.svg`}
+          alt=""
+          aria-hidden="true"
+          class:list={['fruta absolute block', pos]}
+          style={`--tam:${tam};aspect-ratio:1;`}
+        />
+      ))
+    }
+  </div>
+
+  {/* En desktop: position:relative + alto fijo, los 5 desplegables van
+      position:absolute adentro (ver Desplegable.astro) y es el script de acá
+      abajo el que les calcula "left" y "width" en px. Con eso los cerrados
+      nunca cambian de tamaño al abrirse uno — solo se corren de lugar.
+
+      En mobile no hay nada de eso: son cinco barras horizontales apiladas en
+      una columna común, y el script se abstiene de escribirles medidas. */}
+  <div
+    data-desplegables
+    class="relative mx-auto flex w-full max-w-[1360px] flex-col gap-3 px-4 md:h-[68vh] md:block"
+  >
     {
       Desplegables.map((desplegable) => (
         <Desplegable imagen={desplegable.fondo} titulo={desplegable.titulo} />
@@ -52,6 +97,29 @@ const ANCHO_TOTAL_CERRADO = ANCHO_CERRADO * Desplegables.length + GAP * (Despleg
   </p>
 </section>
 
+<style>
+  /* Copia de .fruta en Favorita: el SVG de máscara aporta la silueta y el
+     color sale del background-color, no del archivo. */
+  /* Antes era un <span> pintado con `background-color` y recortado por
+     `mask-image`; ahora es un <img> con el color ya adentro del archivo (ver
+     /icons/fondo). Las máscaras son de lo más caro de rasterizar y una imagen
+     se decodifica una sola vez — el cambio salió de un parpadeo en el hero,
+     donde se redibujaban todas juntas. El color y el opacity de marca de agua
+     ahora viven en el SVG. */
+  .fruta {
+
+    /* El tamaño sale de un número suelto (`--tam`, en vw) y no de un `width`
+       inline, para poder ponerle un piso: en mobile 1vw es tan poco que las
+       frutas quedaban como manchitas. Con max() manda el vw mientras la
+       pantalla sea ancha y, por debajo de ~1000px, pasa a mandar el px — que
+       es el mismo número multiplicado, así que la jerarquía de tamaños entre
+       frutas se mantiene igual. Sin breakpoint: el cambio de una fórmula a la
+       otra ocurre justo donde se cruzan, sin salto. */
+    width: max(calc(var(--tam) * 1vw), calc(var(--tam) * 10px));
+
+  }
+</style>
+
 <script>
   import { gsap, GOLPE, esperarHero } from '../../scripts/entrada';
 
@@ -60,6 +128,13 @@ const ANCHO_TOTAL_CERRADO = ANCHO_CERRADO * Desplegables.length + GAP * (Despleg
   // DOM order == orden visual izquierda a derecha, exactamente el que se pidió.
   const tarjetas = gsap.utils.toArray<HTMLElement>('[data-desplegable]');
   const texto = document.querySelector<HTMLElement>('[data-texto-momento]');
+  const frutas = gsap.utils.toArray<HTMLElement>('[data-fruta-momento]');
+
+  // El giro lo escribe GSAP y no el CSS: en el marcado iría como propiedad
+  // `rotate`, independiente de `transform`, y al animarles la `y` GSAP toma
+  // el control de las tres. Es un set estático, así que va afuera del guard
+  // de prefers-reduced-motion — sin movimiento las frutas igual van giradas.
+  gsap.set(frutas, { rotation: (_i, el: HTMLElement) => Number(el.dataset.giro) });
 
   if (seccion && !sinMovimiento) {
     const DUR = 1;
@@ -72,6 +147,7 @@ const ANCHO_TOTAL_CERRADO = ANCHO_CERRADO * Desplegables.length + GAP * (Despleg
 
     gsap.set(tarjetas, { y: SUBIDA_TARJETAS, opacity: 0 });
     if (texto) gsap.set(texto, { y: -140, opacity: 0 });
+    gsap.set(frutas, { y: (_i, el: HTMLElement) => seccion.offsetHeight - el.offsetTop });
 
     esperarHero(() => {
       // Se vuelve a fijar el estado oculto acá: el gsap.set() de arriba corre
@@ -100,6 +176,36 @@ const ANCHO_TOTAL_CERRADO = ANCHO_CERRADO * Desplegables.length + GAP * (Despleg
         // detrás, en vez de que los dos lleguen juntos.
         .to(texto, { y: 0, duration: DUR - 0.25 }, 0.25)
         .fromTo(texto, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 0.25);
+
+      // Las frutas suben desde abajo de la sección, igual que en Favorita.
+      //
+      // Timeline aparte y no un tween más en la de arriba: necesita
+      // invalidateOnRefresh (los `desdeAbajo` son funciones y hay que
+      // recalcularlas al redimensionar), y esa opción hace que un `to` relea
+      // su origen del estado actual — o sea que metida en la timeline de las
+      // tarjetas las rompería. Mismo rango, así que entran a la par.
+      const desdeAbajo = (_i: number, el: HTMLElement) => seccion.offsetHeight - el.offsetTop;
+
+      gsap.fromTo(
+        frutas,
+        { y: desdeAbajo },
+        {
+          y: 0,
+          ease: GOLPE,
+          duration: DUR,
+          // 'random' y no el orden del array: son fondo, y un stagger parejo
+          // de izquierda a derecha se lee como una fila ordenada en vez de
+          // como algo que flota hacia arriba.
+          stagger: { amount: 0.5, from: 'random' },
+          scrollTrigger: {
+            trigger: seccion,
+            start: 'top 90%',
+            end: 'top 20%',
+            scrub: 0.6,
+            invalidateOnRefresh: true,
+          },
+        }
+      );
     });
   }
 </script>
@@ -120,8 +226,22 @@ const ANCHO_TOTAL_CERRADO = ANCHO_CERRADO * Desplegables.length + GAP * (Despleg
   // Recalcula left/width de los 5 según cuál (si hay alguno) está abierto, y
   // centra todo el conjunto dentro del contenedor. Se llama al cargar y en
   // cada click — nunca hay que tocar más de un lugar para estos cálculos.
+  // En mobile las barras se apilan solas con el flex del contenedor: si el
+  // script les escribiera `left` y `width` en px las sacaría de esa columna.
+  // Se consulta en cada llamada (no una sola vez) para que al rotar el
+  // teléfono o redimensionar la ventana se acomode al caso que corresponda.
+  const enColumna = () => window.matchMedia('(max-width: 767px)').matches;
+
   const recalcular = () => {
     if (!contenedor) return;
+    if (enColumna()) {
+      // Se limpia lo que haya quedado de un tamaño anterior de ventana.
+      botones.forEach((boton) => {
+        boton.style.width = '';
+        boton.style.left = '';
+      });
+      return;
+    }
     const indiceAbierto = botones.findIndex((b) => b.hasAttribute('data-abierto'));
     const anchos = botones.map((_, i) => (i === indiceAbierto ? ANCHO_ABIERTO : ANCHO_CERRADO));
     const anchoTotal = anchos.reduce((suma, ancho) => suma + ancho, 0) + GAP * (botones.length - 1);

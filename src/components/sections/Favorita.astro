@@ -4,6 +4,14 @@ import Aura from '../Aura.astro';
 // Las tres botellas comparten recorte (854×2287 exactos), así que a igual
 // alto quedan a la misma escala y alineadas sin compensar nada.
 //
+// En mobile el tamaño se fija por ANCHO y no por alto, al revés que en
+// desktop. Es la única forma de garantizar que la fila entre siempre: con
+// `h-[41vh]` el ancho sale del alto de la ventana (0.373 veces), así que en
+// una pantalla achatada —o en horizontal— la fila se pasaba del ancho igual.
+// Con 31vw + 34vw + 31vw y los dos solapes de 24px, la fila mide 96vw − 48px
+// pase lo que pase; y `w-auto` no hace falta declararlo en mobile porque el
+// alto lo resuelve el `h-auto`. En md vuelve a mandar el alto.
+//
 // Van en el flujo, sin `absolute`: el solape lo hacen los márgenes negativos y
 // el orden de apilado lo decide el z-index, que en un contenedor flex vale
 // aunque los items sean `position: static`. El tamaño se fija por alto y el
@@ -16,7 +24,7 @@ const botellas = [
     // Las laterales van apenas más bajas y corridas: eso alcanza para mandarlas
     // hacia atrás. Sin desplazamiento vertical, así las tres bases coinciden
     // (de eso se encarga el `items-end` del contenedor).
-    clase: 'z-10 h-[64vh] -mr-11',
+    clase: 'z-10 h-auto w-[31vw] -mr-6 md:h-[64vh] md:w-auto md:-mr-11',
     // Orden de entrada al hacer scroll (no el visual, que es naranja-roja-
     // amarilla de izquierda a derecha): naranja, amarilla, roja.
     orden: 1,
@@ -24,35 +32,36 @@ const botellas = [
   {
     nombre: 'Frutos Rojos',
     imagen: '/images/rojo-trim.webp',
-    clase: 'z-20 h-[70vh]',
+    clase: 'z-20 h-auto w-[34vw] md:h-[70vh] md:w-auto',
     orden: 3,
   },
   {
     nombre: 'Lima & Menta',
     imagen: '/images/amarillo-trim.webp',
-    clase: 'z-10 h-[64vh] -ml-11',
+    clase: 'z-10 h-auto w-[31vw] -ml-6 md:h-[64vh] md:w-auto md:-ml-11',
     orden: 2,
   },
 ];
 
 // Las botellas ocupan de ~30% a ~70% de ancho: el grupo "pegado" usa esos
-// bordes como referencia para quedar rozándolas.
+// bordes como referencia para quedar rozándolas. `tam` va en vw sin unidad
+// (ver .fruta: lleva un piso en px para que en mobile no queden diminutas).
 const frutas = [
-  { tipo: 'sandia', pos: 'left-[4%] top-[44%]', tam: '9vw', giro: -18 }, // sandía izquierda medio, mediano
-  { tipo: 'frutilla', pos: 'left-[8%] top-[9%]', tam: '8vw', giro: 14 }, // frutilla arriba izquierda, mediano
+  { tipo: 'sandia', pos: 'left-[4%] top-[44%]', tam: 9, giro: -18 }, // sandía izquierda medio, mediano
+  { tipo: 'frutilla', pos: 'left-[8%] top-[9%]', tam: 8, giro: 14 }, // frutilla arriba izquierda, mediano
   // --- rodean la botella, sin tocarla ---
-  { tipo: 'jengibre', pos: 'left-[30%] top-[50%]', tam: '7vw', giro: -10 }, // jengibre izquierda medio, al lado de las botellas
-  { tipo: 'sandia', pos: 'left-[30%] top-[70%]', tam: '8vw', giro: 22 }, // sandía extremo bajo izquierdo
-  { tipo: 'sandia', pos: 'right-[30%] top-[70%]', tam: '8vw', giro: -16 }, // sandía extremo bajo derecho
-  { tipo: 'hojaMenta', pos: 'right-[30%] top-[50%]', tam: '7vw', giro: 12 }, // hoja de menta derecha medio, al lado de las botellas
+  { tipo: 'jengibre', pos: 'left-[30%] top-[50%]', tam: 7, giro: -10 }, // jengibre izquierda medio, al lado de las botellas
+  { tipo: 'sandia', pos: 'left-[30%] top-[70%]', tam: 8, giro: 22 }, // sandía extremo bajo izquierdo
+  { tipo: 'sandia', pos: 'right-[30%] top-[70%]', tam: 8, giro: -16 }, // sandía extremo bajo derecho
+  { tipo: 'hojaMenta', pos: 'right-[30%] top-[50%]', tam: 7, giro: 12 }, // hoja de menta derecha medio, al lado de las botellas
   // Arriba de la tapa (top-[21%] es donde empieza la botella más alta), no
   // encima de ella.
-  { tipo: 'frutilla', pos: 'left-[40%] top-[11%]', tam: '6vw', giro: -9 }, // frutilla entre las botellas y el título
-  { tipo: 'arandano', pos: 'right-[40%] top-[13%]', tam: '4.5vw', giro: 16 }, // arándano entre las botellas y el título
+  { tipo: 'frutilla', pos: 'left-[40%] top-[11%]', tam: 6, giro: -9 }, // frutilla entre las botellas y el título
+  { tipo: 'arandano', pos: 'right-[40%] top-[13%]', tam: 4.5, giro: 16 }, // arándano entre las botellas y el título
   // --- fin del grupo pegado ---
-  { tipo: 'arandano', pos: 'right-[6%] top-[8%]', tam: '5vw', giro: -12 }, // arándano arriba derecha
-  { tipo: 'hojaMenta', pos: 'right-[6%] top-[68%]', tam: '7vw', giro: 19 }, // hoja de menta derecha medio (segunda)
-  { tipo: 'jengibre', pos: 'right-[10%] top-[30%]', tam: '7vw', giro: -14 }, // jengibre abajo derecha
+  { tipo: 'arandano', pos: 'right-[6%] top-[8%]', tam: 5, giro: -12 }, // arándano arriba derecha
+  { tipo: 'hojaMenta', pos: 'right-[6%] top-[68%]', tam: 7, giro: 19 }, // hoja de menta derecha medio (segunda)
+  { tipo: 'jengibre', pos: 'right-[10%] top-[30%]', tam: 7, giro: -14 }, // jengibre abajo derecha
 ];
 ---
 
@@ -63,7 +72,7 @@ const frutas = [
     position:fixed y sin esto se pintaría delante.
 
     El envoltorio existe para poder colgar la ola FUERA de la sección: la
-    sección lleva overflow-hidden (recorta frutas y aura) y ahí adentro la ola
+    sección lleva overflow-hidden (recorta las frutas) y ahí adentro la ola
     quedaría cortada. */}
 <div class="relative z-20">
 
@@ -93,17 +102,20 @@ const frutas = [
   <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-10">
     {
       frutas.map(({ tipo, pos, tam, giro }) => (
-        <span
+        <img
           data-fruta-favorita
           data-giro={giro}
+          src={`/icons/fondo/${tipo}-celeste.svg`}
+          alt=""
+          aria-hidden="true"
           class:list={['fruta absolute block', pos]}
-          style={`width:${tam};aspect-ratio:1;--fruta:url(/icons/${tipo}.svg);`}
+          style={`--tam:${tam};aspect-ratio:1;`}
         />
       ))
     }
   </div>
 
-  <h2 class="relative z-10 text-center font-duper text-6xl font-bold text-[#850E10]">
+  <h2 class="relative z-10 text-center font-duper text-7xl font-bold text-[#850E10]">
     {/* Mismo mecanismo que el titular del hero: la línea recortada por su
         propia máscara, el texto entra letra por letra (ver el script). */}
     <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
@@ -111,16 +123,45 @@ const frutas = [
     </span>
   </h2>
 
-  {/* Aura detrás de la botella central: nucleo bajo = 80% del radio en
-      degradado (poco color sólido, mucho desenfoque). z-[5]: por encima de
-      las frutas (z-0), debajo de las botellas (z-10/z-20). */}
-  <div class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center">
-    <div class="relative aspect-square w-[100vw] max-w-[800px]">
-      <Aura marca="favorita" size="100%" color="#0071B8" nucleo="50%" fin="100%" intensidad={1} />
-    </div>
-  </div>
+  {/* La sombra de las botellas va en vh y no en px, y más corta que antes.
+      Con los 30px de offset y 50px de blur que tenía necesitaba 80px por
+      debajo de la base, y ahí abajo no siempre hay tanto: 72px en un portátil
+      de 810 y apenas 47px en un teléfono de 844 (el título ocupa más líneas y
+      empuja todo). O sea que el overflow-hidden le cortaba la cola en una
+      línea horizontal justo contra Momento — eso era la "sombra cortada".
+      1.8vh + 3vh piden 4.8% del alto, que entra en las dos.
 
-  <div class="flex items-end justify-center">
+      Lo único que no cubre es una ventana muy achatada (tipo 430px de alto),
+      donde abajo de la base quedan 15px y no entra ninguna sombra. */}
+  <div class="relative flex items-end justify-center">
+
+    {/* Aura detrás de la botella central. z-[5]: por encima de las frutas,
+        debajo de las botellas (z-10/z-20).
+
+        Su punto más bajo es la base de las botellas, y no se calcula: el
+        bloque va adentro del contenedor de las botellas, anclado a su
+        `bottom`. Como ese contenedor es `items-end`, su borde de abajo ES la
+        línea donde apoyan las tres, así que el círculo termina ahí solo — y
+        sigue haciéndolo si cambian de alto.
+
+        El corrimiento hace que asome apenas por debajo de esa base: el
+        degradado se apaga en el 92% del radio (--aura-fin), o sea que lo que
+        se ve termina un 4% del alto antes que la caja.
+
+        shrink-0 porque es item de un flex: sin eso el navegador lo achica
+        hasta el ancho de la fila de botellas y el max-w queda de adorno.
+
+        En mobile el ancho va en 135vw y no en 100vw: con 100vw el círculo
+        medía casi lo mismo que la fila de botellas (390 contra 352), así que
+        quedaba enteramente tapado por ellas y no se veía nada. Con 135vw
+        asoma por arriba y por los costados; lo que se pasa del ancho de la
+        pantalla lo recorta el overflow de la sección. */}
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex justify-center">
+      <div class="relative aspect-square w-[135vw] max-w-[760px] shrink-0 translate-y-[10%] md:w-[100vw]">
+        <Aura marca="favorita" size="100%" color="#0071B8" nucleo="58%" fin="92%" intensidad={1} />
+      </div>
+    </div>
+
     {
       botellas.map(({ nombre, imagen, clase, orden }) => (
         <img
@@ -131,7 +172,10 @@ const frutas = [
           data-botella-favorita
           data-orden={orden}
           class:list={[
-            'w-auto object-contain drop-shadow-[0_30px_50px_rgba(90,100,20,0.28)]',
+            // Sin `w-auto` acá: el ancho lo decide `clase`, que en mobile lo
+            // fija en vw. Con las dos utilidades de `width` presentes gana la
+            // que la hoja de Tailwind ponga última, y ganaba `w-auto`.
+            'object-contain drop-shadow-[0_1.8vh_3vh_rgba(90,100,20,0.28)]',
             clase,
           ]}
         />
@@ -144,16 +188,22 @@ const frutas = [
 <style>
   /* Mismo mecanismo que .fruta en Home.astro: el SVG de máscara aporta la
      silueta, el color sale del background-color (no del archivo). */
+  /* Antes era un <span> pintado con `background-color` y recortado por
+     `mask-image`; ahora es un <img> con el color ya adentro del archivo (ver
+     /icons/fondo). Las máscaras son de lo más caro de rasterizar y una imagen
+     se decodifica una sola vez — el cambio salió de un parpadeo en el hero,
+     donde se redibujaban todas juntas. El color y el opacity de marca de agua
+     ahora viven en el SVG. */
   .fruta {
-    background-color: #cce3f1;
-    -webkit-mask-image: var(--fruta);
-    mask-image: var(--fruta);
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
+    /* El tamaño sale de un número suelto (`--tam`, en vw) y no de un `width`
+       inline, para poder ponerle un piso: en mobile 1vw es tan poco que las
+       frutas quedaban como manchitas. Con max() manda el vw mientras la
+       pantalla sea ancha y, por debajo de ~1000px, pasa a mandar el px — que
+       es el mismo número multiplicado, así que la jerarquía de tamaños entre
+       frutas se mantiene igual. Sin breakpoint: el cambio de una fórmula a la
+       otra ocurre justo donde se cruzan, sin salto. */
+    width: max(calc(var(--tam) * 1vw), calc(var(--tam) * 10px));
+
   }
 </style>
 
@@ -195,15 +245,15 @@ const frutas = [
     const desdeAbajo = (_i: number, el: HTMLElement) => seccion.offsetHeight - el.offsetTop;
 
     gsap.set('[data-linea-favorita]', { yPercent: 115 });
+    gsap.set('[data-aura="favorita"]', { scale: 0.15 });
     gsap.set(botellas, { y: desdeAbajo });
     gsap.set(frutas, { y: desdeAbajo });
-    gsap.set('[data-aura="favorita"]', { scale: 0.15 });
 
     esperarHero(() => {
       document.fonts.ready.then(() => {
         const letras = letrasDiagonal('[data-linea-favorita]');
 
-        // Momento en que entran botellas, texto y aura. Las frutas del fondo
+        // Momento en que entran botellas y texto. Las frutas del fondo
         // arrancan solas antes (en 0) y el resto cae junto acá: el texto ya no
         // se adelanta a las botellas, entran a la par.
         const JUNTOS = 0.3;
@@ -257,34 +307,50 @@ const frutas = [
             { y: 0, stagger: { amount: 0.35, ease: 'none' } },
             JUNTOS
           )
-          // El aura acompaña a las botellas: arranca con ellas y termina de
-          // crecer un poco después de que la última se acomoda, así el halo
-          // "se abre" detrás del grupo ya armado.
-          //
-          // Ease aparte del resto: GOLPE deja el aura congelada en chiquito y
-          // después la abre de un saque, que en un degradado tan grande se
-          // lee como un parpadeo. Con power2.out crece parejo de entrada y
-          // frena al final.
+          // El aura entra detrás de las botellas, no con ellas: arranca un
+          // cuarto de tiempo después de que ellas empiezan a subir y cierra en
+          // el mismo instante que la última. Así el halo se abre sobre un
+          // grupo que ya está armándose, en vez de crecer con la escena vacía.
+          // Con GOLPE como todo el resto (hereda el default de la timeline).
           .fromTo(
             '[data-aura="favorita"]',
             { scale: 0.15 },
-            { scale: 1, duration: DUR + 0.35, ease: 'power2.out' },
-            JUNTOS
+            { scale: 1, duration: DUR + 0.1 },
+            JUNTOS + 0.25
           );
       });
     });
 
-    // Vaivén de la ola, en loop y suelto del scroll: es lo que hace que la
-    // línea de agua se lea como agua y no como un borde recortado mientras
-    // sube. Va en xPercent (no en x) para que el recorrido escale con el
-    // ancho, y se queda corto a propósito — el contenedor le da 5% de
-    // sobrante de cada lado, así nunca asoma el final de la imagen.
-    gsap.to('[data-ola-favorita]', {
-      xPercent: -3,
-      duration: 4,
-      ease: 'sine.inOut',
-      yoyo: true,
-      repeat: -1,
-    });
+    // ---- MAREA ---------------------------------------------------------
+    // La ola nunca queda quieta: dos loops sueltos del scroll, que es lo que
+    // hace que la línea de agua se lea como agua y no como un borde recortado
+    // mientras sube.
+    //
+    // Son dos tweens y no uno con períodos distintos (5s y 3.2s) a propósito:
+    // como no son múltiplos, la combinación tarda 16s en repetirse igual y
+    // nunca se le ve el ciclo. Van en porcentaje y no en píxeles para que el
+    // recorrido escale con el ancho de la pantalla.
+    const ola = '[data-ola-favorita]';
+
+    // Lateral: el movimiento principal. Simétrico (-2 a 2) y no de 0 hacia un
+    // lado, así el agua hamaca en los dos sentidos en vez de irse siempre
+    // para el mismo. El contenedor le da 5% de sobrante de cada lado, así que
+    // con 2% nunca asoma el final de la imagen.
+    gsap.fromTo(
+      ola,
+      { xPercent: -2 },
+      { xPercent: 2, duration: 5, ease: 'sine.inOut', yoyo: true, repeat: -1 }
+    );
+
+    // Vertical: mucho más chico, solo para que la cresta respire. Siempre
+    // hacia abajo (0 a 2) y nunca hacia arriba: la tinta del SVG llega justo
+    // al borde de abajo de la imagen, así que subiéndola se abriría una
+    // hendija entre la ola y el bloque de agua. Bajando, lo que se recorta
+    // queda tapado por el agua misma y no se ve.
+    gsap.fromTo(
+      ola,
+      { yPercent: 0 },
+      { yPercent: 2, duration: 3.2, ease: 'sine.inOut', yoyo: true, repeat: -1 }
+    );
   }
 </script>

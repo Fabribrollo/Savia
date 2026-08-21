@@ -55,7 +55,11 @@ const resenas = [
 ];
 ---
 
-<section class="relative min-h-dvh w-full overflow-hidden p-6 sm:p-8 sm:pt-16 md:p-12">
+<section
+  id="reviews"
+  data-seccion-resenas
+  class="relative flex min-h-dvh w-full flex-col justify-between overflow-hidden p-6 sm:block sm:p-8 sm:pt-16 md:p-12"
+>
   {/* Fondo decorativo. -z-10 lo manda detrás de todo lo demás en la sección
       (que es `relative`, así que ese z-index apila local, no contra el resto
       de la página). */}
@@ -67,14 +71,20 @@ const resenas = [
 
   {/* Botella en el hueco a la derecha del título. z-0: por debajo del título
       y del carrusel (ambos con z-10), así el carrusel "tapa" el borde
-      inferior de la botella al superponerse. En mobile sobresale del borde
-      derecho (right negativo) — el overflow-hidden de la sección recorta el
-      resto, dejando ver solo una porción al lado del título, como se pidió. */}
+      inferior de la botella al superponerse. Sobresale del borde derecho
+      (right negativo) y el overflow-hidden de la sección recorta el resto.
+
+      En mobile es bastante más grande y arranca más abajo (56vh desde el
+      13%): con el bloque de texto y reseñas mandado al pie, el medio de la
+      sección queda vacío y es ese hueco el que ocupa. Al crecer también se le
+      abrió el `right` negativo, para que lo que gana de tamaño no se lo coma
+      el borde derecho. */}
   <img
     src="/images/amarillo-trim.webp"
     alt=""
     aria-hidden="true"
-    class="pointer-events-none absolute right-[-6%] top-0 z-0 h-[28vh] w-auto -rotate-[28deg] select-none sm:right-[3%] sm:h-[52vh] lg:right-[13%] lg:top-0 lg:h-[100vh]"
+    data-botella-resenas
+    class="pointer-events-none absolute right-[-12%] top-[13%] z-0 h-[56vh] w-auto -rotate-[28deg] select-none sm:right-[3%] sm:top-0 sm:h-[52vh] lg:right-[13%] lg:top-0 lg:h-[100vh]"
   />
 
   {/* clamp() en vez de un rem fijo: mismo mecanismo que el titular del hero
@@ -83,14 +93,20 @@ const resenas = [
       texto tan grande, un 45% angosto lo hace envolver en tantas líneas que
       se sale igual). */}
   <h2
+    data-titulo-resenas
     class="relative z-10 max-w-full text-start font-duper font-bold leading-[0.85] text-[#CED500] lg:max-w-[45%]"
     style="font-size: clamp(3rem, 16vw, 10rem);"
   >
     Cada sorbo impulsa el siguiente momento
   </h2>
 
+  {/* En mobile este bloque se va al pie de la sección: el `justify-between`
+      de la <section> reparte el espacio sobrante entre el título (arriba) y
+      esto (abajo), y el hueco del medio queda para la botella. En sm+ la
+      sección vuelve a ser un bloque normal y esto queda pegado al título,
+      como estaba. */}
   <div class="relative z-10 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
-    <div class="shrink-0 max-w-[400px]">
+    <div data-opina-resenas class="shrink-0 max-w-[400px]">
       <h3
         class="font-duper font-bold leading-[0.9] text-[#850E10] mt-8"
         style="font-size: clamp(2.5rem, 4vw, 4rem);"
@@ -106,7 +122,7 @@ const resenas = [
         scroll/arrastre horizontal). min-w-[22rem] recién entra en sm+, donde
         ya hay lugar de sobra al lado del título. cursor-grab lo pone el
         script de abajo al agarrar. */}
-    <div class="carrusel-resenas flex min-h-[19rem] w-full min-w-0 cursor-grab gap-4 overflow-x-auto overflow-y-hidden p-4 active:cursor-grabbing sm:min-h-[23rem] sm:min-w-[22rem] sm:gap-6 sm:p-8">
+    <div data-carrusel-resenas class="carrusel-resenas flex min-h-[19rem] w-full min-w-0 cursor-grab gap-4 overflow-x-auto overflow-y-hidden p-4 active:cursor-grabbing sm:min-h-[23rem] sm:min-w-[22rem] sm:gap-6 sm:p-8">
       {
         resenas.map((resena) => (
           <Resena
@@ -144,6 +160,77 @@ const resenas = [
     -webkit-user-select: none;
   }
 </style>
+
+<script>
+  import { gsap, GOLPE, esperarHero } from '../../scripts/entrada';
+
+  const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const seccion = document.querySelector<HTMLElement>('[data-seccion-resenas]');
+  const titulo = document.querySelector<HTMLElement>('[data-titulo-resenas]');
+  const botella = document.querySelector<HTMLElement>('[data-botella-resenas]');
+  const opina = document.querySelector<HTMLElement>('[data-opina-resenas]');
+  const carrusel = document.querySelector<HTMLElement>('[data-carrusel-resenas]');
+
+  if (seccion && titulo && botella && opina && carrusel && !sinMovimiento) {
+    const DUR = 1;
+
+    // Cada elemento arranca justo afuera del cuadro por su lado, medido sobre
+    // su posición real y no con un número fijo: el borde de adentro queda
+    // exactamente en el borde de la pantalla, así no hay ni un asomo antes de
+    // tiempo ni recorrido de más (que se traduce en velocidad de más, porque
+    // el tiempo lo fija el scroll).
+    //
+    // Se descuenta la `x` que GSAP ya tenga escrita: getBoundingClientRect la
+    // incluye, y sin esto el valor se realimenta en cada refresh y los
+    // elementos se van corriendo cada vez más lejos (mismo problema que
+    // documenta Banner.astro).
+    // La firma es la que espera GSAP para un valor por función: (índice,
+    // elemento). Pasarlas como (elemento) tira `getBoundingClientRect is not
+    // a function`, porque lo que llega primero es el índice.
+    const desdeIzquierda = (_i: number, el: HTMLElement) => {
+      const x = gsap.getProperty(el, 'x') as number;
+      return -(el.getBoundingClientRect().right - x);
+    };
+    const desdeDerecha = (_i: number, el: HTMLElement) => {
+      const x = gsap.getProperty(el, 'x') as number;
+      return window.innerWidth - (el.getBoundingClientRect().left - x);
+    };
+
+    gsap.set(titulo, { x: desdeIzquierda });
+    gsap.set(botella, { x: desdeDerecha });
+    gsap.set(opina, { x: desdeIzquierda });
+    gsap.set(carrusel, { x: desdeDerecha });
+
+    esperarHero(() => {
+      // La tipografía cambia el ancho del título y del bloque de texto, y de
+      // ahí sale cuánto tienen que correrse.
+      document.fonts.ready.then(() => {
+        gsap
+          .timeline({
+            defaults: { ease: GOLPE, duration: DUR },
+            scrollTrigger: {
+              trigger: seccion,
+              // Rango largo (casi un viewport) porque son dos tandas, no una:
+              // con el rango corto del resto de las secciones, la segunda
+              // entraba encima de la primera.
+              start: 'top 85%',
+              end: 'top -5%',
+              scrub: 0.6,
+              invalidateOnRefresh: true,
+            },
+          })
+          // Primera tanda: título por izquierda, botella por derecha.
+          .fromTo(titulo, { x: desdeIzquierda }, { x: 0 }, 0)
+          .fromTo(botella, { x: desdeDerecha }, { x: 0 }, 0)
+          // Segunda tanda, arranca donde termina la botella (DUR): cada uno
+          // entra por el lado en el que va a quedar — el texto por izquierda
+          // y las reseñas por derecha.
+          .fromTo(opina, { x: desdeIzquierda }, { x: 0 }, DUR)
+          .fromTo(carrusel, { x: desdeDerecha }, { x: 0 }, DUR);
+      });
+    });
+  }
+</script>
 
 <script>
   // Arrastre horizontal con mouse: overflow-x-auto ya soporta touch/trackpad

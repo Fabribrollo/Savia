@@ -12,7 +12,15 @@ const { titulo, texto, class: clase = '' } = Astro.props;
 <article
   data-card
   class:list={[
-    'absolute w-[32%] min-w-[425px] max-w-[425px] rounded-3xl bg-crema px-7 py-6 text-center shadow-[0_14px_34px_-14px_rgba(50,60,10,0.55)]',
+    // En mobile la tarjeta ocupa casi todo el ancho y NO lleva top/left: se
+    // queda en su posición estática (arriba de todo del contenedor) y de ahí
+    // en más la ubica GSAP, que es el que arma la pila (ver Home.astro). De
+    // md para arriba vuelve el tamaño fijo y manda el `pos` que le pasa el
+    // consumidor, que también es md: — por eso el min-w y el max-w van con
+    // prefijo: si quedaran sueltos, en mobile forzarían 425px de ancho contra
+    // una pantalla de 390.
+    'absolute inset-x-[4%] rounded-3xl bg-crema px-7 py-6 text-center shadow-[0_14px_34px_-14px_rgba(50,60,10,0.55)]',
+    'md:inset-x-auto md:w-[32%] md:min-w-[425px] md:max-w-[425px]',
     clase,
   ]}
 >

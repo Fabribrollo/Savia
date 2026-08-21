@@ -22,21 +22,34 @@ const {
   type="button"
   data-desplegable
   class:list={[
-    'group absolute top-0 isolate flex h-full cursor-pointer items-center justify-center overflow-hidden',
+    // Mobile: barra horizontal, en el flujo normal, de ancho completo. El
+    // `absolute` + top-0 de desktop (donde el script le calcula `left` y
+    // `width` en px) vuelve recién en md.
+    //
+    // El ALTO no está acá sino en el <style> de abajo, junto con el de la
+    // cápsula abierta. Tenerlo repartido entre una utilidad de Tailwind y una
+    // regla del componente es pelearse con la cascada: son dos hojas
+    // distintas y termina ganando la que el bundler ponga última, no la más
+    // específica. Declarado en un solo lugar, el caso abierto gana siempre.
+    'group relative isolate flex w-full shrink-0 cursor-pointer items-center justify-center overflow-hidden',
+    'md:absolute md:top-0 md:w-auto',
     clase,
   ]}
   {...resto}
 >
-  {/* Ancho fijo (440px, el mismo que ANCHO_ABIERTO en Momento.astro) y no
-      bg-cover: con bg-cover, al transicionar el ancho del botón la imagen se
-      reescala para seguir cubriendo la caja — eso es el "zoom" que se veía
-      al abrir. Con un ancho fijo la foto nunca cambia de tamaño; el botón
-      solo tapa o destapa una porción más grande, como una ventana. */}
+  {/* Medida fija y no "cubrir la caja": si la foto se adaptara al tamaño del
+      botón, al abrirse se reescalaría y se vería un zoom. Con una medida fija
+      la foto nunca cambia de tamaño y el botón solo tapa o destapa una
+      porción más grande, como una ventana.
+      Cuál es esa medida depende de por dónde crece cada uno: en desktop la
+      cápsula se ensancha, así que lo fijo es el ancho (440px, el mismo
+      ANCHO_ABIERTO de Momento.astro); en mobile crece a lo alto, así que lo
+      fijo es el alto (26vh, el mismo de la barra abierta). */}
   <img
     src={`/images/${imagen}`}
     alt=""
     aria-hidden="true"
-    class="pointer-events-none absolute left-1/2 top-0 h-full w-[440px] max-w-none -translate-x-1/2 object-cover"
+    class="pointer-events-none absolute left-0 top-1/2 h-[26vh] w-full -translate-y-1/2 object-cover object-center md:left-1/2 md:top-0 md:h-full md:w-[440px] md:max-w-none md:-translate-x-1/2 md:translate-y-0"
   />
 
   {/* Tinte azul sobre la foto: 50% en reposo, se apaga del todo al abrirse
@@ -45,26 +58,56 @@ const {
       opacidad sin tocar la imagen de fondo. */}
   <span aria-hidden="true" data-tinte class="pointer-events-none absolute inset-0 bg-[#0071B8]"></span>
 
-  {/* -rotate-90: mismo truco que ya tenía el componente, gira el bloque de
-      texto horizontal para que quede leyéndose de abajo hacia arriba, como
-      en la referencia. whitespace-nowrap para que ningún título llegue a
-      partirse en dos líneas al rotar. */}
+  {/* El -rotate-90 —que gira el texto para que se lea de abajo hacia arriba,
+      como en la referencia— es solo de desktop, donde la cápsula es vertical.
+      En mobile la cápsula es horizontal, así que el título va derecho y un
+      poco más grande. whitespace-nowrap en los dos casos, para que ningún
+      título se parta en dos líneas. */}
   <span
     data-titulo
-    class="relative whitespace-nowrap font-duper text-4xl font-bold text-[#FFEDC2] -rotate-90 md:text-6xl"
+    class="relative whitespace-nowrap font-duper text-[2.6rem] font-bold text-[#FFEDC2] md:-rotate-90 md:text-6xl"
   >
     {titulo}
   </span>
 </button>
 
 <style>
+  /* Cápsula cerrada: extremos totalmente redondeados. En mobile la barra es
+     horizontal y bastante más baja, así que el radio de desktop la dejaría
+     hecha una píldora finita; con la mitad del alto queda redondeada pero sin
+     perder la caja.
+
+     Lo que se anima también cambia según el caso: en mobile la cápsula crece
+     a lo ALTO (las demás no cambian de tamaño, las empuja el flex de la
+     columna), en desktop se ensancha y el script le mueve el `left`. Misma
+     curva y misma duración en los dos. */
   [data-desplegable] {
-    /* Cápsula cerrada: extremos totalmente redondeados. */
-    border-radius: 102px;
+    height: 11vh;
+    border-radius: 6vh;
     transition:
-      width 550ms cubic-bezier(1, 0, 0.15, 1),
-      left 550ms cubic-bezier(1, 0, 0.15, 1),
+      height 550ms cubic-bezier(1, 0, 0.15, 1),
       border-radius 102ms cubic-bezier(1, 0, 0.15, 1);
+  }
+
+  /* Abierta en mobile: 26vh contra los 11vh de reposo, la misma proporción
+     que el 440/190 de desktop. */
+  @media (max-width: 767px) {
+    [data-desplegable][data-abierto] {
+      height: 26vh;
+    }
+  }
+
+  @media (min-width: 768px) {
+    [data-desplegable] {
+      /* En desktop la cápsula ocupa todo el alto del contenedor y lo que
+         cambia es el ancho. */
+      height: 100%;
+      border-radius: 102px;
+      transition:
+        width 550ms cubic-bezier(1, 0, 0.15, 1),
+        left 550ms cubic-bezier(1, 0, 0.15, 1),
+        border-radius 102ms cubic-bezier(1, 0, 0.15, 1);
+    }
   }
 
   /* Abierto: mismo estilo de esquina redondeada, pero un radio fijo bastante
@@ -72,7 +115,54 @@ const {
      cápsula completa (semicírculo arriba y abajo); con un valor fijo chico
      quedan las paredes rectas y solo las cuatro esquinas curvas. */
   [data-desplegable][data-abierto] {
-    border-radius: 102px;
+    border-radius: 6vh;
+  }
+
+  @media (min-width: 768px) {
+    [data-desplegable][data-abierto] {
+      border-radius: 102px;
+    }
+  }
+
+  /* Oscurecido de hover. Va en un ::after y no subiendo la opacidad del
+     tinte azul porque son dos cosas con vidas distintas: el tinte se apaga
+     del todo al abrirse la cápsula (es lo que revela la foto en su color
+     real), y este oscurecido tiene que poder existir sin pelearse con esa
+     transición.
+
+     Detrás del título: el ::after no está posicionado y el título sí
+     (`relative`), así que el texto le queda por encima sin necesidad de
+     z-index. */
+  [data-desplegable]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease-out;
+  }
+
+  /* Con el dedo no hay hover, así que el oscurecido también lo dispara el
+     toque: `:active` vale mientras el botón está apretado, en mouse y en
+     pantalla táctil por igual. */
+  [data-desplegable]:active::after {
+    opacity: 0.18;
+  }
+
+  /* El hover, en cambio, solo donde hay puntero de verdad: en pantallas
+     táctiles el :hover se queda pegado después del toque. */
+  @media (hover: hover) {
+    [data-desplegable]:hover::after {
+      opacity: 0.18;
+    }
+  }
+
+  /* Abierta no se oscurece, ni con hover ni con el toque: ahí la gracia es
+     ver la foto sin velo. */
+  [data-desplegable][data-abierto]:hover::after,
+  [data-desplegable][data-abierto]:active::after {
+    opacity: 0;
   }
 
   [data-tinte] {

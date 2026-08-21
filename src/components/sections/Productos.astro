@@ -38,22 +38,26 @@ const jugos = [
   {/* px-8 y no mx-8: combinado con w-full, el margen se SUMA al 100% del
       ancho del padre (100% + 64px) y la sección se desbordaba a lo ancho.
       Como padding, el espacio queda adentro de la caja. */}
-  <div class="flex flex-1 flex-col items-center justify-start w-full pt-4 px-8 mb-8">
-    {/* El tamaño va en clamp y no en text-6xl fijo: con `whitespace-nowrap`
-        el texto no puede envolver, así que a 60px fijos en una pantalla
-        angosta medía más que el viewport y la máscara de overflow-hidden lo
-        recortaba. El tope de 3.75rem es el mismo text-6xl de antes, o sea que
-        en desktop no cambia nada. */}
+  <div class="flex flex-1 flex-col items-center justify-start w-full pt-4 px-3 sm:px-8 mb-8">
+    {/* El tamaño está en el bloque de estilos del final del archivo y no acá,
+        porque cambia de fórmula entre mobile y sm+ y un `style` inline no
+        admite media query.
+
+        En mobile el título va en DOS renglones (el <br> de abajo, que se
+        apaga en sm+). No es un capricho: en un solo renglón el texto mide 8.5
+        veces el tamaño de fuente, así que contra los (100vw - 24px) de ancho
+        útil el techo eran 43px en un teléfono de 390. Partido, el renglón más
+        largo ("Tu momento.") mide 5.1 veces, y eso deja llegar a 62px sin que
+        se recorte. */}
     <h2
-      class="w-full whitespace-nowrap text-center font-bold text-[#850E10] font-duper"
-      style="font-size: clamp(1.5rem, 8vw, 3.75rem);"
+      class="titulo-prod w-full whitespace-nowrap text-center font-bold text-[#850E10] font-duper"
     >
       {/* Una sola línea (whitespace-nowrap: sin el salto que tenía "Tu
           momento." / "Tu sabor" antes). Mismo mecanismo que el titular del
           hero: la línea recortada por su máscara, así el texto entra
           deslizándose desde abajo. */}
       <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
-        <span class="block" data-linea-prod>Tu momento. Tu sabor</span>
+        <span class="block" data-linea-prod>Tu momento.<br class="sm:hidden" /> Tu sabor</span>
       </span>
     </h2>
     {/* mt-8 acá arriba, igual al mt-8 que ya traía la fila de tarjetas ahí
@@ -69,20 +73,24 @@ const jugos = [
       Tres sabores. Tres formas de disfrutar la frescura.
     </h5>
 
-{/* En mobile las tarjetas se apilan: w-full con tope de 500px, así se adaptan
-    al ancho disponible en vez de forzar 500px y salirse de la pantalla. El
-    min-w-[500px] recién entra en md+, donde ya están en fila y hay lugar. */}
-<div class="flex flex-col md:flex-row justify-center items-center gap-8 w-full">
+{/* Las tarjetas se adaptan al ancho disponible: `w-full` con tope de 500px y
+    sin ancho mínimo. Antes tenían `md:min-w-[500px]`, con la idea de que en
+    fila ya había lugar — pero tres de 500 con sus gaps piden 1564px, así que
+    entre 768 y 1564 se salían de la pantalla y empujaban el ancho del
+    documento. Sin mínimo, en fila se reparten lo que haya y recién a partir de
+    ~1600 llegan a los 500 que las topan. */}
+<div class="flex flex-col md:flex-row justify-center items-center gap-8 w-full mb-16">
   {jugos.map((jugo) => (
   <div
     data-tarjeta-prod
-    class="group card-jugo relative flex w-full max-w-[500px] flex-col justify-center items-center gap-4 rounded-4xl p-4 overflow-hidden border border-white/35 bg-white/14 shadow-[inset_0_0_22px_rgba(0,0,0,0.13)] backdrop-blur-md backdrop-saturate-[1.2] md:min-w-[500px]"
+    class="group card-jugo relative flex w-full max-w-[500px] flex-col justify-center items-center gap-4 rounded-4xl p-4 overflow-hidden border border-white/35 bg-white/14 shadow-[inset_0_0_22px_rgba(0,0,0,0.13)] backdrop-blur-md backdrop-saturate-[1.2]"
     style={`color: #${jugo.color};`}
   >
     <h2 class="text-4xl font-bold text-center pt-10 pt-6 font-duper z-10">{jugo.nombre}</h2>
-    <!-- Fondo que aparece en hover -->
+    <!-- Fondo que aparece en hover (y con `data-activa`, que es el hover de
+         mentira que usa el toque en pantallas sin puntero — ver el script). -->
     <div
-      class="absolute inset-0 bg-cover bg-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      class="absolute inset-0 bg-cover bg-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-[[data-activa]]:opacity-100"
       style={`background-image: url(${jugo.fondo});`}
     ></div>
 
@@ -105,7 +113,7 @@ const jugos = [
     <img
       alt={jugo.nombre}
       src={jugo.imagen}
-      class="relative z-10 w-48 h-auto origin-top object-contain transition-transform duration-500 ease-out group-hover:scale-[1.45]"
+      class="relative z-10 w-48 h-auto origin-top object-contain transition-transform duration-500 ease-out group-hover:scale-[1.45] group-[[data-activa]]:scale-[1.45]"
     />
   </div>
 ))}
@@ -113,6 +121,54 @@ const jugos = [
 
   </div>
 </section>
+
+<style>
+  /* Mobile: el título va en dos renglones y con 16vw. El segundo término del
+     min() es el techo real — el renglón más largo mide 5.1 veces el tamaño de
+     fuente y el ancho útil es 100vw menos el px-3 de los costados; el divisor
+     5.3 deja margen. El tope del clamp sube a 5rem: con los 3.75rem de antes
+     el 16vw quedaba frenado ahí desde los 375px de ancho para arriba, o sea
+     que en la práctica no crecía nada. */
+  .titulo-prod {
+    font-size: clamp(1.5rem, min(16vw, (100vw - 1.5rem) / 5.3), 5rem);
+    /* Interlineado corto, como el titular del hero: con el 1.5 por defecto
+       los dos renglones quedaban separados por casi un renglón entero. */
+    line-height: 0.9;
+  }
+
+  /* sm+: un solo renglón (el <br> se apaga) y la misma fórmula de antes. El
+     tope de 3.75rem — el text-6xl original — se alcanza a los ~631px, así que
+     de ahí para arriba no cambia nada respecto de lo que había. */
+  @media (min-width: 640px) {
+    .titulo-prod {
+      font-size: clamp(1.5rem, 9.5vw, 3.75rem);
+    }
+  }
+</style>
+
+<script>
+  // El efecto de las tarjetas (fondo que aparece + botella que crece) está
+  // hecho con `group-hover`, y en una pantalla táctil no hay hover: o no pasa
+  // nada, o queda pegado después del toque según el navegador. Acá el toque
+  // pone un `data-activa` en la tarjeta, que dispara exactamente las mismas
+  // reglas (ver `group-[[data-activa]]:` en el marcado).
+  //
+  // Solo se engancha donde no hay puntero fino: en desktop el hover ya hace
+  // el trabajo y no hace falta que un clic deje la tarjeta encendida.
+  if (window.matchMedia('(hover: none)').matches) {
+    const tarjetas = Array.from(document.querySelectorAll<HTMLElement>('[data-tarjeta-prod]'));
+
+    tarjetas.forEach((tarjeta) => {
+      tarjeta.addEventListener('click', () => {
+        // Nunca más de una encendida: mismo criterio que los desplegables de
+        // Momento. Tocar la que ya estaba abierta la apaga.
+        const yaEstaba = tarjeta.hasAttribute('data-activa');
+        tarjetas.forEach((otra) => otra.removeAttribute('data-activa'));
+        if (!yaEstaba) tarjeta.setAttribute('data-activa', '');
+      });
+    });
+  }
+</script>
 
 <script>
   import gsap from 'gsap';
