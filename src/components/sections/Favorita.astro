@@ -1,8 +1,10 @@
 ---
 import Aura from '../Aura.astro';
 
-// Las tres botellas comparten recorte (854×2287 exactos), así que a igual
-// alto quedan a la misma escala y alineadas sin compensar nada.
+// Las tres botellas están recortadas al envase, sin bordes, y con la misma
+// proporción (0.371-0.373 de ancho sobre alto), así que a igual alto quedan a
+// la misma escala y alineadas sin compensar nada. El width/height de abajo es
+// solo la proporción para reservar el lugar antes de que carguen.
 //
 // En mobile el tamaño se fija por ANCHO y no por alto, al revés que en
 // desktop. Es la única forma de garantizar que la fila entre siempre: con
@@ -40,6 +42,37 @@ const botellas = [
     imagen: '/images/amarillo-trim.webp',
     clase: 'z-10 h-auto w-[31vw] -ml-6 md:h-[64vh] md:w-auto md:-ml-11',
     orden: 2,
+  },
+];
+
+// Etiquetas de cada sabor, posicionadas contra la sección en los dos tamaños.
+// En desktop hay lugar a los costados de las botellas; en mobile no, así que
+// las dos de arriba van en fila sobre ellas y la del centro abajo.
+//
+// El z-30 va en cada bloque: las botellas son z-10/z-20 y si no, le pasarían
+// por encima al texto de abajo.
+//
+// En mobile las dos de arriba NO van absolutas: entre el título y las botellas
+// quedan apenas 40px y se encimaban con los dos. Puestas en el flujo, como una
+// fila, el propio flex de la sección les hace lugar.
+const etiquetas = [
+  {
+    titulo: 'Naranja & Jengibre',
+    bajada: 'Un impulso natural para seguir',
+    zona: 'arriba',
+    pos: 'md:absolute md:left-[4%] md:top-[33%] md:w-[24%]',
+  },
+  {
+    titulo: 'Lima & Menta',
+    bajada: 'Frescura que revitaliza',
+    zona: 'arriba',
+    pos: 'md:absolute md:right-[4%] md:top-[30%] md:w-[24%]',
+  },
+  {
+    titulo: 'Frutos Rojos',
+    bajada: 'Un equilibrio entre dulzura y frescura',
+    zona: 'abajo',
+    pos: 'absolute bottom-[3%] left-1/2 w-[80%] -translate-x-1/2 md:bottom-[1.5%] md:w-[36%]',
   },
 ];
 
@@ -123,6 +156,23 @@ const frutas = [
     </span>
   </h2>
 
+  {/* Las dos de arriba. `md:contents` saca este envoltorio del layout a partir
+      de md, y ahí cada una se acomoda sola con su `md:absolute`. */}
+  <div class="z-30 flex w-full items-start justify-between gap-3 px-3 text-center text-[#FFEDC2] md:contents">
+    {
+      etiquetas
+        .filter(({ zona }) => zona === 'arriba')
+        .map(({ titulo, bajada, pos }) => (
+          <div data-etiqueta-favorita class:list={['w-[46%] text-center', pos]}>
+            <h3 class="font-duper text-xl font-bold leading-tight md:text-[2.1vw]">{titulo}</h3>
+            <p class="font-futura text-sm font-medium leading-snug md:mt-1 md:text-[1.05vw]">
+              {bajada}
+            </p>
+          </div>
+        ))
+    }
+  </div>
+
   {/* La sombra de las botellas va en vh y no en px, y más corta que antes.
       Con los 30px de offset y 50px de blur que tenía necesitaba 80px por
       debajo de la base, y ahí abajo no siempre hay tanto: 72px en un portátil
@@ -167,8 +217,8 @@ const frutas = [
         <img
           src={imagen}
           alt={`Botella de jugo Savia sabor ${nombre}`}
-          width="854"
-          height="2287"
+          width="185"
+          height="499"
           data-botella-favorita
           data-orden={orden}
           class:list={[
@@ -182,6 +232,19 @@ const frutas = [
       ))
     }
   </div>
+
+  {
+    etiquetas
+      .filter(({ zona }) => zona === 'abajo')
+      .map(({ titulo, bajada, pos }) => (
+        <div data-etiqueta-favorita class:list={['z-30 text-center text-[#FFEDC2]', pos]}>
+          <h3 class="font-duper text-xl font-bold leading-tight md:text-[2.1vw]">{titulo}</h3>
+          <p class="font-futura text-sm font-medium leading-snug md:mt-1 md:text-[1.05vw]">
+            {bajada}
+          </p>
+        </div>
+      ))
+  }
 </section>
 </div>
 
@@ -246,6 +309,7 @@ const frutas = [
 
     gsap.set('[data-linea-favorita]', { yPercent: 115 });
     gsap.set('[data-aura="favorita"]', { scale: 0.15 });
+    gsap.set('[data-etiqueta-favorita]', { opacity: 0, y: 24 });
     gsap.set(botellas, { y: desdeAbajo });
     gsap.set(frutas, { y: desdeAbajo });
 
@@ -317,6 +381,14 @@ const frutas = [
             { scale: 0.15 },
             { scale: 1, duration: DUR + 0.1 },
             JUNTOS + 0.25
+          )
+          // Las etiquetas entran últimas, cuando las botellas ya están casi en
+          // su lugar: son el pie de foto de algo que primero tiene que estar.
+          .fromTo(
+            '[data-etiqueta-favorita]',
+            { opacity: 0, y: 24 },
+            { opacity: 1, y: 0, duration: DUR, stagger: { amount: 0.2 } },
+            JUNTOS + 0.5
           );
       });
     });

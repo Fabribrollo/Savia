@@ -11,20 +11,30 @@ const derecha = [
 
 const enlace =
   'relative z-10 font-duper text-xl font-bold text-azul transition-opacity hover:opacity-60 md:text-[1.4rem]';
+
+// Los del panel de mobile llevan su propio tamaño y no el de `enlace`: si se
+// mezclaran las dos clases de `font-size` en el mismo elemento, cuál gana lo
+// decide el orden en la hoja de Tailwind y no el del atributo.
+const enlaceMenu =
+  'relative z-10 font-duper text-3xl font-bold text-azul transition-opacity hover:opacity-60';
 ---
 
 <nav
   data-nav
-  class="absolute inset-x-0 top-5 z-30 flex justify-center px-4 md:top-7"
+  class="absolute inset-x-0 top-5 z-30 flex flex-col items-center px-4 md:top-7"
   aria-label="Principal"
 >
   <!--
     Liquid glass sutil: el efecto lo hace el backdrop-filter, no el tinte.
     Sin sombra y con tinte mínimo, la pastilla se lee como vidrio y no como
     una pastilla blanca apoyada encima.
+
+    En mobile la pastilla ocupa todo el ancho disponible (`w-full` contra el
+    px-4 del <nav>), así no puede sobresalir por más largos que sean los
+    contenidos. De md para arriba vuelve a medir lo que mide su contenido.
   -->
   <div
-    class="relative flex items-center gap-7 overflow-hidden rounded-full border border-white/35 bg-white/14 px-8 py-3.5 backdrop-blur-md backdrop-saturate-[1.2] md:gap-14 md:px-12 md:py-4"
+    class="relative flex w-full items-center justify-center gap-7 overflow-hidden rounded-full border border-white/35 bg-white/14 px-8 py-3.5 backdrop-blur-md backdrop-saturate-[1.2] md:w-auto md:gap-14 md:px-12 md:py-4"
   >
     <!-- Reflejo apenas insinuado sobre el borde superior -->
     <span
@@ -32,12 +42,183 @@ const enlace =
       class="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent"
     ></span>
 
-    {izquierda.map(({ label, href }) => <a href={href} class={enlace}>{label}</a>)}
+    <!-- `contents` y no un div común: el envoltorio desaparece para el layout,
+         así los enlaces siguen siendo hijos directos del flex y el `gap` de la
+         pastilla los separa igual que antes. En mobile el grupo entero se
+         oculta y quedan solo el logo y el botón. -->
+    <span class="contents max-md:hidden">
+      {izquierda.map(({ label, href }) => <a href={href} class={enlace}>{label}</a>)}
+    </span>
 
     <a href="/" class="relative z-10 shrink-0" aria-label="Savia — inicio">
-      <img src="/icons/logo.svg" alt="Savia" class="h-5 w-auto md:h-7" />
+      <img src="/icons/logo.svg" alt="Savia" class="h-7 w-auto md:h-7" />
     </a>
 
-    {derecha.map(({ label, href }) => <a href={href} class={enlace}>{label}</a>)}
+    <span class="contents max-md:hidden">
+      {derecha.map(({ label, href }) => <a href={href} class={enlace}>{label}</a>)}
+    </span>
+
+    <!-- Hamburguesa: absoluta contra la pastilla para que el logo quede
+         centrado sobre el ancho completo y no se corra por tener un botón de
+         un solo lado. -->
+    <button
+      type="button"
+      data-menu-boton
+      aria-label="Abrir menú"
+      aria-expanded="false"
+      class="absolute right-5 top-1/2 z-10 -translate-y-1/2 md:hidden"
+    >
+      <svg
+        width="26"
+        height="18"
+        viewBox="0 0 26 18"
+        fill="none"
+        aria-hidden="true"
+        class="overflow-visible"
+      >
+        <line data-linea-menu="arriba" x1="0" y1="2" x2="26" y2="2" />
+        <line data-linea-menu="medio" x1="0" y1="9" x2="26" y2="9" />
+        <line data-linea-menu="abajo" x1="0" y1="16" x2="26" y2="16" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Panel del menú. Fuera de la pastilla y no adentro: la pastilla tiene
+       overflow-hidden (lo necesita el reflejo) y ahí adentro el panel quedaría
+       recortado al abrirse. -->
+  <div
+    data-menu-panel
+    class="w-1/2 self-end overflow-hidden rounded-3xl border border-white/35 bg-white/14 backdrop-blur-md backdrop-saturate-[1.2] md:hidden"
+  >
+    {/* Alto fijo y `justify-evenly`: las cuatro opciones se reparten el alto
+        del panel en partes iguales, en vez de quedar apiladas arriba con el
+        resto vacío. Alineadas a la derecha, del lado del botón que las abre
+        — y el panel mismo va contra ese borde (`self-end`, media pantalla de
+        ancho). */}
+    <ul class="flex h-[32dvh] flex-col items-end justify-evenly px-6 py-5 text-right">
+      {
+        [...izquierda, ...derecha].map(({ label, href }) => (
+          <li>
+            <a href={href} data-menu-enlace class={enlaceMenu}>
+              {label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
   </div>
 </nav>
+
+<style>
+  /* Las tres líneas del ícono. El color y el grosor van acá y no en el
+     marcado para no repetirlos en cada <line>. */
+  [data-linea-menu] {
+    stroke: var(--color-azul);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    transition:
+      transform 320ms cubic-bezier(1, 0, 0.15, 1),
+      opacity 160ms ease-out;
+    /* El origen se declara en unidades del viewBox y apuntando al centro del
+       ícono (26x18). Con `transform-origin: center` a secas cada línea giraba
+       alrededor de su propia caja —que para una línea horizontal es un
+       rectángulo de alto 0— y las dos diagonales terminaban descentradas. */
+    transform-box: view-box;
+    transform-origin: 13px 9px;
+  }
+
+  /* Abierto, las tres se vuelven una X: la del medio se apaga y las otras dos
+     se cruzan.
+
+     El orden importa y va al revés de lo que se lee: en CSS los transforms se
+     aplican de derecha a izquierda, así que primero corre el translate —que
+     lleva la línea al centro del ícono— y recién después el giro, que ya la
+     encuentra pasando por el origen. Escrito al revés, la línea giraba lejos
+     del centro y la X quedaba corrida. */
+  [data-nav][data-menu-abierto] [data-linea-menu='arriba'] {
+    transform: rotate(45deg) translateY(7px);
+  }
+
+  [data-nav][data-menu-abierto] [data-linea-menu='medio'] {
+    opacity: 0;
+  }
+
+  [data-nav][data-menu-abierto] [data-linea-menu='abajo'] {
+    transform: rotate(-45deg) translateY(-7px);
+  }
+
+  /* El panel se abre con max-height y no con height, que es lo que permite
+     animarlo; el contenido tiene alto propio (50dvh) y el tope abierto lo
+     acompaña. */
+  [data-menu-panel] {
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+    transition:
+      max-height 380ms cubic-bezier(1, 0, 0.15, 1),
+      margin-top 380ms cubic-bezier(1, 0, 0.15, 1),
+      opacity 220ms ease-out;
+  }
+
+  [data-nav][data-menu-abierto] [data-menu-panel] {
+    /* Un pelo más que el alto de la lista (32dvh), para que el borde no le
+       coma nada al abrirse del todo. */
+    max-height: 35dvh;
+    margin-top: 0.75rem;
+    opacity: 1;
+  }
+</style>
+
+<script>
+  const nav = document.querySelector<HTMLElement>('[data-nav]');
+  const boton = document.querySelector<HTMLElement>('[data-menu-boton]');
+
+  if (nav && boton) {
+    const cerrar = () => {
+      nav.removeAttribute('data-menu-abierto');
+      boton.setAttribute('aria-expanded', 'false');
+      boton.setAttribute('aria-label', 'Abrir menú');
+    };
+
+    boton.addEventListener('click', () => {
+      const abierto = nav.hasAttribute('data-menu-abierto');
+      if (abierto) {
+        cerrar();
+        return;
+      }
+      nav.setAttribute('data-menu-abierto', '');
+      boton.setAttribute('aria-expanded', 'true');
+      boton.setAttribute('aria-label', 'Cerrar menú');
+    });
+
+    // Al elegir una opción el menú se va solo: el salto es dentro de la misma
+    // página, así que si quedara abierto taparía justo lo que se acaba de
+    // pedir ver.
+    document
+      .querySelectorAll('[data-menu-enlace]')
+      .forEach((enlace) => enlace.addEventListener('click', cerrar));
+
+    // Y también al scrollear. Además de ser lo esperable, arregla un bug
+    // visible: apenas se scrollea, la animación del hero le baja la opacidad
+    // al nav, y un elemento con opacity < 1 deja de tener fondo que muestrear
+    // para el `backdrop-filter` — o sea que el vidrio de la pastilla y del
+    // panel se apagaba de golpe. Cerrando el menú el problema no llega a
+    // verse.
+    //
+    // El umbral es por la barra de direcciones de los navegadores móviles:
+    // aparecer o esconderse dispara un scroll de unos pocos px y sin ese
+    // margen el menú se cerraría solo apenas se abre.
+    let desde = window.scrollY;
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (!nav.hasAttribute('data-menu-abierto')) {
+          desde = window.scrollY;
+          return;
+        }
+        if (Math.abs(window.scrollY - desde) > 24) cerrar();
+      },
+      { passive: true }
+    );
+  }
+</script>

@@ -214,14 +214,14 @@ const arcoBeneficios = [
              piso de min-w (165px) y la etapa 2 tenía que escalarla 1.58 — por
              eso en la primera sección se veía diminuta y en la segunda no.
              32vh es ese mismo tamaño final expresado como ancho
-             (0.86 × alto × 854/2287 de proporción ≈ 0.32 × alto), así que la
+             (0.86 × alto × 0.371 de proporción ≈ 0.32 × alto), así que la
              botella ya nace del tamaño correcto y la escala queda en ~1. El
              max() conserva el comportamiento de desktop, donde manda 22vw. -->
         <img
           src="/images/rojo-trim.webp"
           alt="Botella de jugo Savia sabor rojo"
-          width="854"
-          height="2287"
+          width="211"
+          height="568"
           data-botella-img
           class="w-[max(22vw,32vh)] max-w-[380px] object-contain drop-shadow-[0_30px_50px_rgba(90,100,20,0.3)]"
         />
@@ -268,7 +268,7 @@ const arcoBeneficios = [
        debajo de la botella (z-20). La posición la calcula el script con
        trigonometría sobre el círculo del domo, así que acá no llevan
        coordenadas: solo left/top en 0 y GSAP los mueve con x/y. -->
-  <div data-arco class="pointer-events-none absolute inset-0 z-[9]">
+  <div data-arco id="#beneficios" class="pointer-events-none absolute inset-0 z-[9]">
     {
       arcoBeneficios.map(({ titulo, icono }) => (
         <div
@@ -1264,12 +1264,32 @@ const arcoBeneficios = [
     }
 
     disparadorHero = lineaHero.scrollTrigger;
+
+    // El destino del enlace "Beneficios" del nav. Se apunta un poco después de
+    // que cierra la entrada del arco (ENTRADA_ARCO + 0.4), para que al llegar
+    // ya estén los cinco en su lugar y no a mitad de camino.
+    const marcarBeneficios = () => {
+      const st = lineaHero.scrollTrigger;
+      const total = lineaHero.duration();
+      if (!st || !total) return;
+      scrollBeneficios = st.start + ((ENTRADA_ARCO + 0.35) / total) * (st.end - st.start);
+    };
+    marcarBeneficios();
+    ScrollTrigger.addEventListener('refresh', marcarBeneficios);
   }
 
   // Sin animación de entrada no hay onComplete que dispare el montaje.
   if (sinMovimiento) montarScroll();
 
   // ---------------------------------------------------------------------
+  // A qué scroll corresponde el momento en que los beneficios del arco ya
+  // están puestos. Lo calcula montarScroll() y lo recalcula en cada refresh:
+  // depende del largo del pin y de la duración de la timeline, y esa duración
+  // no es la misma en mobile (donde el carrusel agrega etapas) que en desktop.
+  // Queda en null hasta que el scroll se monta, o sea durante la entrada, que
+  // es justo cuando el scroll está bloqueado igual.
+  let scrollBeneficios: number | null = null;
+
   // Saltos internos (nav y CTA). Duración fija en vez del smooth nativo: el
   // hero pineado agrega 3168px de recorrido que la vista no recorre, y a
   // velocidad constante ese tramo se sentía como una pausa. Con una duración
@@ -1284,7 +1304,13 @@ const arcoBeneficios = [
     const ancla = enlace.getAttribute('href');
     if (!ancla || ancla === '#') return;
 
-    const destino = document.querySelector<HTMLElement>(ancla);
+    // "Beneficios" es la tercera etapa del hero, que no es una sección aparte
+    // sino un momento de su timeline: pasa entera dentro del pin, así que no
+    // hay ningún elemento del DOM a esa altura al que saltar. El destino se
+    // calcula sobre el recorrido del pin — la posición 1.9 de la timeline, que
+    // es cuando los beneficios ya terminaron de entrar.
+    const destino =
+      ancla === '#beneficios' ? scrollBeneficios : document.querySelector<HTMLElement>(ancla);
     if (!destino) return;
 
     evento.preventDefault();

@@ -5,17 +5,11 @@ const contacto = [
   { texto: 'Contactanos al:' },
   { texto: '+54 223 567-8834', href: 'tel:+542235678834' },
   { texto: 'savia.ar@gmail.com', href: 'mailto:savia.ar@gmail.com', antes: 'Escribinos a ' },
-  { texto: 'Contacto', href: '#contacto' },
-  { texto: 'Botón de Arrepentimiento', href: '#arrepentimiento' },
 ];
 
-const legales = [
-  { texto: 'Términos y condiciones', href: '#terminos' },
-  { texto: 'Aviso de privacidad', href: '#privacidad' },
-];
 ---
 
-<footer class="relative isolate bg-[#66AAD4] px-6">
+<footer id="contacto" class="relative isolate bg-[#66AAD4] px-6">
   {/* Fondo decorativo. -z-10 lo manda detrás de todo lo demás en la sección
       (que es `relative`, así que ese z-index apila local, no contra el resto
       de la página). */}
@@ -60,15 +54,19 @@ const legales = [
       </ul>
     </div>
 
-    <div class="grid gap-4 font-futura text-md font-medium text-crema md:grid-cols-[42%_auto_auto] ">
+    <div class="flex flex-col gap-2 font-futura text-md font-medium text-crema sm:flex-row sm:items-center sm:justify-between">
       <p>© Savia. Todos los derechos reservados.</p>
-      {
-        legales.map(({ texto, href }) => (
-          <a href={href} class="whitespace-nowrap transition-opacity hover:opacity-70">
-            {texto}
-          </a>
-        ))
-      }
+      <p>
+        Hecho por{' '}
+        <a
+          href="https://mergge.com.ar"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline underline-offset-2 transition-opacity hover:opacity-70"
+        >
+          Mergge
+        </a>
+      </p>
     </div>
   </div>
 </footer>

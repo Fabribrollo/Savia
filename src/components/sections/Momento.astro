@@ -90,14 +90,36 @@ const frutas = [
       del navegador — es lo que hace que "salga de atrás" al entrar. */}
   <p
     data-texto-momento
-    class="mx-auto text-right font-duper text-3xl text-[#FFEDC2] font-bold"
-    style={`width: ${ANCHO_TOTAL_CERRADO}px;`}
+    class="mx-auto font-duper text-2xl font-bold text-[#FFEDC2] md:text-3xl"
+    style={`--ancho-fila: ${ANCHO_TOTAL_CERRADO}px;`}
   >
     Naturalmente, en cada momento
   </p>
 </section>
 
 <style>
+  /* En mobile el texto ocupa todo el ancho y va centrado debajo de las barras.
+     El ancho fijo de desktop —el de la fila de cápsulas cerradas, que es lo
+     que lo deja alineado con su borde derecho— llegaba a 1062px y en un
+     teléfono se salía de cuadro; el overflow-hidden de la sección lo recortaba
+     y el texto directamente no se veía.
+
+     Va acá y no en el marcado porque un `style` inline no admite media query:
+     el número entra como variable y esta regla decide cuándo usarlo. El
+     `text-align` también vive acá para que no haya dos utilidades peleándose
+     por la misma propiedad entre hojas distintas. */
+  [data-texto-momento] {
+    width: 100%;
+    text-align: center;
+  }
+
+  @media (min-width: 768px) {
+    [data-texto-momento] {
+      width: var(--ancho-fila);
+      text-align: right;
+    }
+  }
+
   /* Copia de .fruta en Favorita: el SVG de máscara aporta la silueta y el
      color sale del background-color, no del archivo. */
   /* Antes era un <span> pintado con `background-color` y recortado por
