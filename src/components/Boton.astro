@@ -93,7 +93,23 @@ const {
     transition: clip-path 400ms ease-in-out;
   }
 
-  a:hover .explosion {
+  /* El hover solo donde hay puntero de verdad. En una pantalla táctil el
+     navegador deja el :hover pegado al último elemento tocado, así que sin
+     este guardado el botón se quedaba pintado después del toque, hasta que se
+     tocara otra cosa. Mismo criterio que en Desplegable.astro.
+
+     Con el dedo el barrido lo dispara :active, que vale solo mientras el
+     botón está apretado, y :focus-visible, que el navegador enciende con
+     teclado pero no con el toque. Entre los tres queda cubierto mouse, dedo y
+     tab, y ninguno se queda encendido de más. */
+  @media (hover: hover) {
+    a:hover .explosion {
+      clip-path: circle(150% at 0 0);
+    }
+  }
+
+  a:active .explosion,
+  a:focus-visible .explosion {
     clip-path: circle(150% at 0 0);
   }
 

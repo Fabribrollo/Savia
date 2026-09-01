@@ -25,7 +25,7 @@ const { titulo, texto, class: clase = '' } = Astro.props;
   ]}
 >
   <div class="mb-3 flex items-center justify-center gap-3.5">
-    <span class="grid size-12 shrink-0 place-items-center rounded-full bg-azul text-crema">
+    <span class="grid size-12 shrink-0 place-items-center rounded-full bg-azul text-crema ">
       <slot name="icono" />
     </span>
     <h3 class="font-duper text-[1.35rem] font-bold leading-tight text-azul md:text-[2rem]">
@@ -34,3 +34,35 @@ const { titulo, texto, class: clase = '' } = Astro.props;
   </div>
   <p class="font-futura text-[1rem] font-medium leading-snug text-balance text-azul/80">{texto}</p>
 </article>
+
+<style>
+  /* Pantallas bajas (iPhone SE y parecidos). Las cuatro tarjetas apiladas
+     miden ~650px y arriba del "Descubrilas" quedan ~537: no entran, y la
+     última terminaba tapada por el botón. Acá se compactan lo justo para que
+     entren — solo en mobile Y solo cuando el alto aprieta, así en un teléfono
+     normal la tarjeta se ve exactamente como antes. */
+  /* El umbral es 800 y no 720 por una cuenta concreta: con el tamaño completo
+     la pila mide ~650px, y el espacio libre arriba del botón es el alto menos
+     130 (los 48 de `bottom-12`, los ~68 del botón y el hueco). O sea que hace
+     falta una pantalla de al menos 780px de alto para que entre. Con 720 de
+     umbral quedaba una franja de 721 a 779 en la que no se compactaba y
+     tampoco entraba — justo donde caen varios Android. Compactada la pila mide
+     ~498 y entra desde los 628. */
+  @media (max-width: 767px) and (max-height: 800px) {
+    [data-card] {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    /* El disco del icono y su fila: los dos aportan alto fijo, que es lo que
+       más pesa cuando el texto ocupa un solo renglón. */
+    [data-card] > div {
+      margin-bottom: 0.375rem;
+    }
+
+    [data-card] > div > span {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+</style>

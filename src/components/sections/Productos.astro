@@ -38,7 +38,11 @@ const jugos = [
   {/* px-8 y no mx-8: combinado con w-full, el margen se SUMA al 100% del
       ancho del padre (100% + 64px) y la sección se desbordaba a lo ancho.
       Como padding, el espacio queda adentro de la caja. */}
-  <div class="flex flex-1 flex-col items-center justify-start w-full pt-4 px-3 sm:px-8 mb-8">
+  {/* pt grande en mobile: el hero termina con los beneficios apoyados sobre el
+      arco, bien abajo en la pantalla, y el título de Productos arrancaba
+      pegado justo debajo. El aire separa las dos secciones. En sm+ vuelve al
+      pt-4 de siempre, donde el problema no se daba. */}
+  <div class="flex flex-1 flex-col items-center justify-start w-full pt-24 px-3 sm:pt-4 sm:px-8 mb-8">
     {/* El tamaño está en el bloque de estilos del final del archivo y no acá,
         porque cambia de fórmula entre mobile y sm+ y un `style` inline no
         admite media query.

@@ -88,9 +88,12 @@ const frutas = [
       abre un desplegable. Sin position: así, al no estar posicionado, queda
       por detrás de los desplegables (que sí lo están) en el stacking normal
       del navegador — es lo que hace que "salga de atrás" al entrar. */}
+  {/* Tamaño fluido en mobile con tope en 1.5rem, que es el text-2xl que tenía
+      fijo: de 384px de ancho para arriba da exactamente lo mismo que antes, y
+      en pantallas más chicas achica en vez de desbordar. md:text-3xl intacto. */}
   <p
     data-texto-momento
-    class="mx-auto font-duper text-2xl font-bold text-[#FFEDC2] md:text-3xl"
+    class="mx-auto font-duper text-[clamp(1.05rem,6.25vw,1.5rem)] font-bold text-[#FFEDC2] md:text-3xl"
     style={`--ancho-fila: ${ANCHO_TOTAL_CERRADO}px;`}
   >
     Naturalmente, en cada momento

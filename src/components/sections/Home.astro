@@ -733,6 +733,7 @@ const arcoBeneficios = [
   // pueda recalcular en un refresh.
   const esMovil = window.matchMedia('(max-width: 767px)').matches;
 
+
   // Dónde espera cada una antes de acomodarse: en fila, derechas y alineadas
   // igual que en la pila final, solo que abajo y bien juntas — se pisan entre
   // ellas y de cada una asoma nada más que el encabezado, como un mazo. No
@@ -778,7 +779,14 @@ const arcoBeneficios = [
     const alturas = tarjetas.map((t) => t.offsetHeight);
     const total =
       alturas.reduce((a, b) => a + b, 0) + HUECO * (tarjetas.length - 1);
-    let y = Math.max(alto * 0.03, (alto - total) / 2);
+    // El "Descubrilas" está fijo abajo a la derecha y en mobile la pila le
+    // llegaba encima: centrada contra el alto completo, la última tarjeta
+    // terminaba ~19px por debajo del borde de arriba del botón. Se centra
+    // contra el espacio que queda ARRIBA del botón, no contra la sección
+    // entera. offsetTop y no getBoundingClientRect: el botón tiene transform
+    // de GSAP y el rect lo incluiría.
+    const piso = esMovil && cta ? cta.offsetTop - HUECO : alto;
+    let y = Math.max(alto * 0.03, (piso - total) / 2);
     return alturas.map((h) => {
       const actual = y;
       y += h + HUECO;
@@ -875,6 +883,24 @@ const arcoBeneficios = [
     // desplazamiento completo se iría por arriba del cuadro.
     const subirLuz = () => -(hero.offsetHeight * (0.5 - FONDO_BOTELLA / 2));
 
+    // Techo para la altura de un beneficio: el bloque entero tiene que entrar
+    // en la sección. El arco se apoya al 73% del alto, pero el ítem mide hasta
+    // ~184px FIJOS (icono + título de dos renglones), así que en pantallas
+    // bajas esa altura pesa mucho más y el texto se cortaba contra el borde de
+    // abajo — 24px en un 375×667, 32px en un 360×640.
+    //
+    // Va en una función aparte porque la altura se calcula en TRES lugares
+    // distintos (acá abajo `alturaArco`, más `alturaCarrusel` y la rama mobile
+    // de `colocarArco`, que son las que efectivamente corren en teléfono).
+    // Aplicar el tope en uno solo no alcanzaba: en mobile seguía cortándose,
+    // porque justo ese no es el camino que se usa.
+    //
+    // En pantallas altas el tope nunca llega a aplicarse y la curva del arco
+    // queda exactamente como estaba.
+    const MARGEN_ABAJO = 16;
+    const conTope = (i: number, y: number) =>
+      Math.min(y, hero.offsetHeight - arcoItems[i].offsetHeight - MARGEN_ABAJO);
+
     // Altura de reposo del beneficio `i` sobre el arco: puro cálculo geométrico,
     // sin leer nada que el propio GSAP ya haya escrito. Lo usan tanto la
     // posición inicial (colocarArco) como el "to" de la entrada: si en cambio
@@ -891,7 +917,7 @@ const arcoBeneficios = [
       // la caja entera dejaría los círculos desalineados respecto del arco.
       const borde = cy + Math.sqrt(Math.max(0, radio * radio - dx * dx));
       const disco = arcoItems[i].firstElementChild as HTMLElement;
-      return borde - RETRO_ICONO - disco.offsetHeight / 2;
+      return conTope(i, borde - RETRO_ICONO - disco.offsetHeight / 2);
     };
 
     // Cuándo entran los cinco beneficios. Va como constante porque la etapa
@@ -932,7 +958,7 @@ const arcoBeneficios = [
       const { radio, cy } = domo();
       const borde = cy + radio * Math.cos((i - giro.i) * pasoAngular(radio));
       const disco = arcoItems[i].firstElementChild as HTMLElement;
-      return borde - RETRO_ICONO - disco.offsetHeight / 2;
+      return conTope(i, borde - RETRO_ICONO - disco.offsetHeight / 2);
     };
 
     // Los beneficios se apoyan sobre el arco: proyección polar desde el centro
@@ -960,11 +986,22 @@ const arcoBeneficios = [
         const angulo = (i - giro.i) * paso;
         const x = cx + radio * Math.sin(angulo);
         const borde = cy + radio * Math.cos(angulo);
-        gsap.set(item, { x, y: borde - RETRO_ICONO - disco.offsetHeight / 2 });
+        gsap.set(item, { x, y: conTope(i, borde - RETRO_ICONO - disco.offsetHeight / 2) });
       });
     };
     colocarArco();
     ScrollTrigger.addEventListener('refresh', colocarArco);
+
+    // Las tarjetas se ocultan mientras se arma la timeline. Al crear el
+    // ScrollTrigger, este renderiza la animación en su estado final para medir
+    // el pin y después vuelve a la posición real — y ese frame intermedio
+    // llegaba a pintarse: las cuatro aparecían un instante en la fila de
+    // espera (medido: a los ~5.6s, en `filaY(0)`) justo al terminar la entrada.
+    //
+    // En mobile no alcanza con que estén fuera de cuadro, porque su `opacity`
+    // es 1 (así entran subiendo en vez de encendiéndose), así que lo único que
+    // las tapa es la posición — y es justo la posición lo que ese frame pisa.
+    gsap.set(tarjetas, { visibility: 'hidden' });
 
     const lineaHero = gsap
       .timeline({
@@ -1030,7 +1067,12 @@ const arcoBeneficios = [
         { opacity: 0, duration: 0.62, ease: 'none' },
         0.04
       )
-      .to(navBarra, { y: () => -(navBarra!.getBoundingClientRect().height + 60), opacity: 0, duration: 0.45 }, 0)
+      // Sin `opacity` a propósito: el nav ya se va entero fuera de cuadro por
+      // posición (su alto + 60px), así que el fundido no aportaba nada — y sí
+      // rompía algo. Un elemento con opacity < 1 deja de tener fondo que
+      // muestrear para el `backdrop-filter`, así que con el menor scroll el
+      // vidrio de la pastilla y del panel del menú se apagaba de golpe.
+      .to(navBarra, { y: () => -(navBarra!.getBoundingClientRect().height + 60), duration: 0.45 }, 0)
       .to(titular, { yPercent: -140, opacity: 0, duration: 0.5 }, 0)
       // Las frutas son fondo de la primera sección nada más: a partir de acá
       // la segunda sección ya tiene su propio fondo (el aura CED500 llenando
@@ -1262,6 +1304,13 @@ const arcoBeneficios = [
         // semitransparentes casi todo el recorrido.
         .fromTo(tarjetas, { opacity: 0 }, { opacity: 1, duration: 0.06, ease: 'none' }, 0.3);
     }
+
+    // Se fuerza el refresh acá y se destapa inmediatamente después, en el
+    // MISMO tick: así el frame intermedio que dispara el refresh nunca llega a
+    // pintarse. Hacerlo con un requestAnimationFrame no serviría — entre medio
+    // habría un paint, que es justamente lo que se quiere evitar.
+    ScrollTrigger.refresh();
+    gsap.set(tarjetas, { visibility: 'visible' });
 
     disparadorHero = lineaHero.scrollTrigger;
 

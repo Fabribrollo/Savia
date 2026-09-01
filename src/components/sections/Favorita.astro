@@ -2,13 +2,13 @@
 import Aura from '../Aura.astro';
 
 // Las tres botellas están recortadas al envase, sin bordes, y con la misma
-// proporción (0.371-0.373 de ancho sobre alto), así que a igual alto quedan a
+// proporción (0.367-0.369 de ancho sobre alto), así que a igual alto quedan a
 // la misma escala y alineadas sin compensar nada. El width/height de abajo es
 // solo la proporción para reservar el lugar antes de que carguen.
 //
 // En mobile el tamaño se fija por ANCHO y no por alto, al revés que en
 // desktop. Es la única forma de garantizar que la fila entre siempre: con
-// `h-[41vh]` el ancho sale del alto de la ventana (0.373 veces), así que en
+// `h-[41vh]` el ancho sale del alto de la ventana (0.368 veces), así que en
 // una pantalla achatada —o en horizontal— la fila se pasaba del ancho igual.
 // Con 31vw + 34vw + 31vw y los dos solapes de 24px, la fila mide 96vw − 48px
 // pase lo que pase; y `w-auto` no hace falta declararlo en mobile porque el
@@ -55,24 +55,46 @@ const botellas = [
 // En mobile las dos de arriba NO van absolutas: entre el título y las botellas
 // quedan apenas 40px y se encimaban con los dos. Puestas en el flujo, como una
 // fila, el propio flex de la sección les hace lugar.
+// Los saltos de línea de mobile van escritos en el dato, con un <br> que se
+// apaga en md. No es tan lindo como dejar que el texto envuelva solo, pero
+// envolver solo obliga a ponerle un ancho máximo a la caja, y ese ancho es un
+// único número que tiene que servir para tres textos de largos distintos: el
+// que corta bien a "Naranja & Jengibre" deja a "Frutos Rojos" de una línea, y
+// el que corta a los tres deja el bloque angosto. Con el corte explícito cada
+// etiqueta queda como corresponde y no hace falta ningún tope de ancho.
+//
+// Por eso los <br> llevan `md:hidden`: en desktop el texto vuelve a fluir
+// dentro de sus `md:w-[24%]` / `md:w-[36%]` como venía haciéndolo. El espacio
+// después del <br> es el que separa las dos palabras cuando el salto no está.
+//
+// Ojo al editar: se renderizan con `set:html`, así que "&" va como `&amp;`.
 const etiquetas = [
   {
-    titulo: 'Naranja & Jengibre',
-    bajada: 'Un impulso natural para seguir',
+    titulo: 'Naranja &amp;<br class="md:hidden" /> Jengibre',
+    bajada: 'Un impulso natural<br class="md:hidden" /> para seguir',
     zona: 'arriba',
-    pos: 'md:absolute md:left-[4%] md:top-[33%] md:w-[24%]',
+    // 8% y no 4%: el texto va centrado en una caja de 24% de ancho, así que lo
+    // que se ve terminaba a 84px de las botellas aunque la caja quedara a 28.
+    pos: 'md:absolute md:left-[8%] md:top-[33%] md:w-[24%]',
   },
   {
-    titulo: 'Lima & Menta',
-    bajada: 'Frescura que revitaliza',
+    titulo: 'Lima &amp;<br class="md:hidden" /> Menta',
+    bajada: 'Frescura que<br class="md:hidden" /> revitaliza',
     zona: 'arriba',
-    pos: 'md:absolute md:right-[4%] md:top-[30%] md:w-[24%]',
+    // 9% de este lado y no 8%: "Lima & Menta" es más corto que "Naranja &
+    // Jengibre", así que centrado en la misma caja su texto arranca más
+    // adentro y quedaba 24px más lejos de la botella que el otro.
+    pos: 'md:absolute md:right-[9%] md:top-[30%] md:w-[24%]',
   },
   {
     titulo: 'Frutos Rojos',
-    bajada: 'Un equilibrio entre dulzura y frescura',
+    bajada: 'Un equilibrio entre<br class="md:hidden" /> dulzura y frescura',
     zona: 'abajo',
-    pos: 'absolute bottom-[3%] left-1/2 w-[80%] -translate-x-1/2 md:bottom-[1.5%] md:w-[36%]',
+    // Sube de 3% a 9% SOLO en mobile: pegada al pie no tenía aire ni con la
+    // botella de arriba ni con la sección siguiente. En desktop se queda en el
+    // 1.5% original — ahí abajo hay lugar de sobra y subirla la metía encima
+    // de la botella.
+    pos: 'absolute bottom-[9%] left-1/2 w-[80%] -translate-x-1/2 md:bottom-[1.5%] md:w-[36%]',
   },
 ];
 
@@ -126,9 +148,16 @@ const frutas = [
     />
   </div>
 
+{/* El pb corre hacia arriba el contenido en flujo (título y botellas), que es
+    lo que abre el aire entre la base de las botellas y la etiqueta de "Frutos
+    Rojos" — esa etiqueta es `absolute bottom-[%]`, así que no se mueve con el
+    padding y el hueco crece.
+    En desktop hace falta por una cuenta concreta: las botellas terminaban en
+    754 de una sección de 800, y la etiqueta mide 56px, o sea que no entraba
+    debajo y se le montaba encima. Los 64px de pb suben la base lo suficiente. */}
 <section
   id="favorita"
-  class="relative isolate flex min-h-dvh flex-col items-center justify-center gap-10 overflow-hidden bg-[#66AAD4]"
+  class="relative isolate flex min-h-dvh flex-col items-center justify-center gap-10 overflow-hidden bg-[#66AAD4] pb-44 md:pb-16"
 >
   {/* Frutas del fondo, mismo tratamiento que Home.astro: z-0 y primeras en
       el DOM, quedan detrás del título y de las botellas. */}
@@ -148,7 +177,14 @@ const frutas = [
     }
   </div>
 
-  <h2 class="relative z-10 text-center font-duper text-7xl font-bold text-[#850E10]">
+  {/* clamp en vez de text-7xl: eran 72px fijos en cualquier pantalla, así que
+      en un teléfono el título ocupaba el ancho completo y empujaba todo lo de
+      abajo. El tope (4.5rem) es el mismo text-7xl de antes, o sea que en
+      desktop no cambia. */}
+  <h2
+    class="relative z-10 text-center font-duper font-bold text-[#850E10]"
+    style="font-size: clamp(2.35rem, 10.2vw, 4.5rem);"
+  >
     {/* Mismo mecanismo que el titular del hero: la línea recortada por su
         propia máscara, el texto entra letra por letra (ver el script). */}
     <span class="block overflow-hidden py-[0.06em] -my-[0.06em]">
@@ -164,10 +200,14 @@ const frutas = [
         .filter(({ zona }) => zona === 'arriba')
         .map(({ titulo, bajada, pos }) => (
           <div data-etiqueta-favorita class:list={['w-[46%] text-center', pos]}>
-            <h3 class="font-duper text-xl font-bold leading-tight md:text-[2.1vw]">{titulo}</h3>
-            <p class="font-futura text-sm font-medium leading-snug md:mt-1 md:text-[1.05vw]">
-              {bajada}
-            </p>
+            <h3
+              class="font-duper text-[clamp(1.4rem,7.4vw,1.8rem)] font-bold leading-tight md:text-[2.1vw]"
+              set:html={titulo}
+            />
+            <p
+              class="font-futura text-[clamp(0.95rem,4.9vw,1.2rem)] font-medium leading-snug md:mt-1 md:text-[1.05vw]"
+              set:html={bajada}
+            />
           </div>
         ))
     }
@@ -217,8 +257,8 @@ const frutas = [
         <img
           src={imagen}
           alt={`Botella de jugo Savia sabor ${nombre}`}
-          width="185"
-          height="499"
+          width="318"
+          height="863"
           data-botella-favorita
           data-orden={orden}
           class:list={[
@@ -237,11 +277,15 @@ const frutas = [
     etiquetas
       .filter(({ zona }) => zona === 'abajo')
       .map(({ titulo, bajada, pos }) => (
-        <div data-etiqueta-favorita class:list={['z-30 text-center text-[#FFEDC2]', pos]}>
-          <h3 class="font-duper text-xl font-bold leading-tight md:text-[2.1vw]">{titulo}</h3>
-          <p class="font-futura text-sm font-medium leading-snug md:mt-1 md:text-[1.05vw]">
-            {bajada}
-          </p>
+        <div data-etiqueta-favorita class:list={['z-30 mx-auto text-center text-[#FFEDC2]', pos]}>
+          <h3
+            class="font-duper text-[clamp(1.4rem,7.4vw,1.8rem)] font-bold leading-tight md:text-[2.1vw]"
+            set:html={titulo}
+          />
+          <p
+            class="font-futura text-[clamp(0.95rem,4.9vw,1.2rem)] font-medium leading-snug md:mt-1 md:text-[1.05vw]"
+            set:html={bajada}
+          />
         </div>
       ))
   }

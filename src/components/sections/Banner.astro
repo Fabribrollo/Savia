@@ -22,23 +22,36 @@ import Boton from "../Boton.astro";
     porcentajes de `height` solo miden contra un `height` real del padre. Al no
     encontrarlo, `h-full` se resolvía a `auto` y el div quedaba del alto del
     texto. Como la section es flex-col, `flex-1` sí lo estira hasta el fondo. */}
-<div class="flex flex-1 w-full flex-col">
+{/* justify-end: el bloque de texto se va al pie de la sección. El separador
+    del fondo ocupa la franja de abajo, así que el mb del contenido lo deja
+    apoyado por encima de él y no tapado. */}
+<div class="flex flex-1 w-full flex-col justify-end">
 
 {/* Este div envuelve título, subtítulo y botón: la entrada y la salida se
     animan sobre él, no sobre las tres piezas por separado. */}
-<div data-contenido-banner class="my-25 mx-10">
+<div data-contenido-banner class="mx-6 mb-20 sm:mx-10 sm:mb-24 md:mb-28">
 
 
   {/* Sin la máscara de overflow-hidden ni el partido en letras: el título ya
       no se escribe, entra de una pieza desde la izquierda igual que el
       subtítulo y el botón (ver el script al final del archivo). */}
+  {/* Tamaños en clamp y no fijos: con `text-7xl` el título medía 72px en
+      cualquier pantalla, así que en un teléfono se partía en un montón de
+      renglones y el bloque se iba de alto. El tope de cada clamp es el valor
+      que tenían antes (4.5rem = text-7xl, 1.5rem = text-2xl), o sea que de
+      ~800px de ancho para arriba se ve exactamente igual que hasta ahora. */}
   <h2
     data-titulo-banner
-    class="text-start text-7xl font-bold text-[#CED500] font-duper max-w-[500px]"
+    class="text-start font-bold text-[#CED500] font-duper max-w-[500px] leading-[1.05]"
+    style="font-size: clamp(2.5rem, 10vw, 4.5rem);"
   >
     Cada día tiene un movimiento
   </h2>
-  <h5 data-sub-banner class="text-start text-2xl font-futura text-[#FFEDC2] my-4 font-medium">
+  <h5
+    data-sub-banner
+    class="text-start font-futura text-[#FFEDC2] my-4 font-medium"
+    style="font-size: clamp(1.05rem, 4.4vw, 1.5rem);"
+  >
     Cada movimiento tiene una Savia.
   </h5>
 
@@ -49,7 +62,7 @@ import Boton from "../Boton.astro";
     href="#momento"
     fondo="bg-aura"
     texto="text-[#FFF8E7]"
-    tamano="px-10 py-2 text-2xl"
+    tamano="px-6 py-2 text-lg sm:px-10 sm:text-2xl"
     flecha={false}
     data-cta-banner
     class="relative self-start"

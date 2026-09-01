@@ -63,9 +63,15 @@ const {
       En mobile la cápsula es horizontal, así que el título va derecho y un
       poco más grande. whitespace-nowrap en los dos casos, para que ningún
       título se parta en dos líneas. */}
+  {/* Tamaño fluido en mobile con tope en 2.6rem, el valor que tenía fijo.
+      Importa más acá que en otros lados por el `whitespace-nowrap`: el título
+      no puede envolver, así que a tamaño fijo el más largo ("Para los días de
+      playa") medía 329px dentro de una tarjeta de 358 y en cualquier pantalla
+      más angosta se salía. Al escalar con el ancho, la proporción entre texto
+      y tarjeta se mantiene. md:text-6xl intacto. */}
   <span
     data-titulo
-    class="relative whitespace-nowrap font-duper text-[2.6rem] font-bold text-[#FFEDC2] md:-rotate-90 md:text-6xl"
+    class="relative whitespace-nowrap font-duper text-[clamp(1.5rem,10.5vw,2.6rem)] font-bold text-[#FFEDC2] md:-rotate-90 md:text-6xl"
   >
     {titulo}
   </span>
