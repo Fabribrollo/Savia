@@ -139,28 +139,33 @@ const moodItems = [
   import { gsap, GOLPE, esperarHero } from '../../scripts/entrada';
 
   const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // Solo desde md. En mobile las tres tarjetas van apiladas en una columna de
-  // ~1900px, así que un único rango de scroll para la sección entera
-  // resolvería la animación con la segunda y la tercera todavía fuera de
-  // pantalla: cuando el visitante llega a ellas ya están puestas y no se ve
-  // nada. Sin animación, la sección queda tal como estaba.
+
+  // En mobile las tres tarjetas van apiladas en una columna de ~1900px, así
+  // que un único rango de scroll para la sección entera resolvería la
+  // animación con la segunda y la tercera todavía fuera de pantalla: cuando
+  // el visitante llega a ellas ya están puestas y no se ve nada. Por eso allá
+  // cada tarjeta se dispara sola, cuando le toca entrar.
   //
-  // Se consulta acá y no con gsap.matchMedia(): ese abre un contexto que se
-  // cierra en cuanto termina su callback, y la timeline de abajo se crea
-  // bastante después (esperarHero es asíncrono). El ScrollTrigger nacía
-  // huérfano, sin refrescar nunca — start en 0 y end en null, o sea que no
-  // avanzaba con el scroll. Mismo chequeo directo que usan Home y Momento.
-  const esEscritorio = window.matchMedia('(min-width: 768px)').matches;
+  // Se consulta con window.matchMedia y no con gsap.matchMedia(): ese abre un
+  // contexto que se cierra en cuanto termina su callback, y las timelines de
+  // abajo se crean bastante después (esperarHero es asíncrono). El
+  // ScrollTrigger nacía huérfano, sin refrescar nunca —start en 0 y end en
+  // null, o sea que no avanzaba con el scroll—. Mismo chequeo directo que
+  // usan Home y Momento.
+  const enColumna = window.matchMedia('(max-width: 767px)').matches;
 
   const seccion = document.querySelector<HTMLElement>('#mood');
   const titulo = document.querySelector<HTMLElement>('[data-mood-titulo]');
   // DOM order == orden visual izquierda a derecha, igual que en Momento: el
-  // stagger sale del propio array, sin reordenar nada.
+  // escalonado sale del propio array, sin reordenar nada.
   const tarjetas = gsap.utils.toArray<HTMLElement>('[data-mood-tarjeta]');
   const botellas = gsap.utils.toArray<HTMLElement>('[data-mood-botella]');
 
-  if (seccion && titulo && tarjetas.length && esEscritorio && !sinMovimiento) {
+  if (seccion && titulo && tarjetas.length && !sinMovimiento) {
     const DUR = 1;
+    // Cuánto más tarde entra la botella que su tarjeta: la tarjeta tiene que
+    // estar puesta para que se lea que la botella entra ADENTRO de ella.
+    const RETRASO_BOTELLA = 0.35;
 
     // Bastante más que el alto de la tarjeta: así arrancan desde fuera de la
     // sección y no "apareciendo" a media altura (mismo criterio que Momento).
@@ -180,27 +185,61 @@ const moodItems = [
       gsap.set(titulo, { y: 120, opacity: 0 });
       gsap.set(tarjetas, { y: SUBIDA, opacity: 0 });
 
-      gsap
-        .timeline({
-          defaults: { ease: GOLPE, duration: DUR },
-          scrollTrigger: {
-            trigger: seccion,
-            start: 'top 85%',
-            end: 'top 15%',
-            scrub: 0.6,
-            invalidateOnRefresh: true,
-          },
-        })
-        .to(titulo, { y: 0, opacity: 1 }, 0)
-        .to(tarjetas, { y: 0, opacity: 1, stagger: { amount: 0.5 } }, 0.15)
-        // Las tres juntas y recién cuando la última tarjeta terminó de entrar
-        // (0.15 de arranque + 0.5 de stagger + 1 de duración = 1.65). Sin
-        // stagger acá a propósito: son dos tiempos distintos, primero se arman
-        // las tarjetas una por una y después entran las botellas de una.
-        //
-        // El GOLPE de los defaults es el que da el efecto: casi quietas al
-        // principio y entrando de un saque sobre el final.
-        .to(botellas, { xPercent: 0 }, 1.65);
+      // El título entra desde abajo contra la sección, igual en los dos casos:
+      // está arriba de todo, así que su rango sirve tal cual apilada o en fila.
+      gsap.to(titulo, {
+        y: 0,
+        opacity: 1,
+        ease: GOLPE,
+        duration: DUR,
+        scrollTrigger: {
+          trigger: seccion,
+          start: 'top 85%',
+          end: 'top 25%',
+          scrub: 0.6,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      if (enColumna) {
+        // Una timeline por tarjeta, disparada por la tarjeta misma. Cada una
+        // repite la misma coreografía que en desktop —tarjeta desde abajo,
+        // botella desde la derecha un toque después—, solo que el escalonado
+        // no lo da un stagger sino el propio scroll: entran en orden porque
+        // están una abajo de la otra.
+        tarjetas.forEach((tarjeta, i) => {
+          gsap
+            .timeline({
+              defaults: { ease: GOLPE, duration: DUR },
+              scrollTrigger: {
+                trigger: tarjeta,
+                start: 'top 90%',
+                end: 'top 40%',
+                scrub: 0.6,
+                invalidateOnRefresh: true,
+              },
+            })
+            .to(tarjeta, { y: 0, opacity: 1 }, 0)
+            .to(botellas[i], { xPercent: 0 }, RETRASO_BOTELLA);
+        });
+      } else {
+        // En fila las tres entran a la vez en pantalla, así que el escalonado
+        // tiene que ser explícito: un stagger sobre el grupo, y el mismo para
+        // las botellas para que cada una siga a la suya.
+        gsap
+          .timeline({
+            defaults: { ease: GOLPE, duration: DUR },
+            scrollTrigger: {
+              trigger: seccion,
+              start: 'top 85%',
+              end: 'top 15%',
+              scrub: 0.6,
+              invalidateOnRefresh: true,
+            },
+          })
+          .to(tarjetas, { y: 0, opacity: 1, stagger: { amount: 0.5 } }, 0.15)
+          .to(botellas, { xPercent: 0, stagger: { amount: 0.5 } }, RETRASO_BOTELLA);
+      }
     });
   }
 </script>
